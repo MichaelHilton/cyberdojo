@@ -57,10 +57,11 @@ end
 dojo = create_dojo
 
 # temporary limiter for TESTING ONLY, remove all lines referencing 'lim' for full functionality
+lim = 10
 dojo.katas.each do |kata|
     language = kata.language.name
     
-    if language == "Java-1.8_JUnit"
+    if language == "Java-1.8_JUnit" || language == "Python-unittest"
         lim -= 1
         
         kata.avatars.active.each do |avatar|
@@ -92,7 +93,7 @@ dojo.katas.each do |kata|
                 num_cycles, start_cycle_time, transitions = parseLight(now.colour.to_s, was.colour.to_s, num_cycles, start_cycle_time, was.time, start_light_time, was.time, line_count, transitions, false, cycle_lines)
                 start_light_time = was.time
                 cycle_lines += line_count
-                kata_line_count += -line_count
+                kata_line_count += line_count
             end
             
             # handle last light that was examined by consecutive loop above
@@ -113,12 +114,12 @@ dojo.katas.each do |kata|
             if language == "Java-1.8_JUnit"
                 if File.exist?(avatar.path+ 'CodeCoverageReport.csv')
                     codeCoverageCSV = CSV.read(avatar.path+ 'CodeCoverageReport.csv')
-                    branchCoverage =  codeCoverageCSV[2][6]
+                   branchCoverage =  codeCoverageCSV[2][6]
                     statementCoverage =  codeCoverageCSV[2][16]
                 end
                 cyclomaticComplexity = `./javancss "#{avatar.path + "sandbox/*.java"}" 2>/dev/null`
-                cyclomaticComplexityNumber =  cyclomaticComplexity.scan(/\d/).join('')
-            end
+          
+           end
             if language == "Python-unittest"
                 if File.exist?(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
                     codeCoverageCSV = CSV.read(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
