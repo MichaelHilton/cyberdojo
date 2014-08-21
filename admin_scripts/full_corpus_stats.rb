@@ -118,7 +118,7 @@ dojo.katas.each do |kata|
                     statementCoverage =  codeCoverageCSV[2][16]
                 end
                 cyclomaticComplexity = `./javancss "#{avatar.path + "sandbox/*.java"}" 2>/dev/null`
-          
+                cyclomaticComplexityNumber =  cyclomaticComplexity.scan(/\d/).join('')
            end
             if language == "Python-unittest"
                 if File.exist?(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
@@ -144,8 +144,8 @@ dojo.katas.each do |kata|
                 else
                 printf("%s,%s,%s,%s,%s,", kata.id.to_s, language, kata.exercise.name.to_s, kata.avatars.count.to_s, avatar.name)
                 printf("%s,%s,%s,%s,%s,",avatar.path, lights.count.to_s, num_red.to_s, num_green.to_s, num_amber.to_s)
-                printf("%s,%s,%s", branchCoverage,statementCoverage,cyclomaticComplexityNumber)
-                printf("%s,%s,%s\n", num_cycles.to_s, endsOnGreen, transitions)
+                printf("%s,%s,%s,", branchCoverage,statementCoverage,cyclomaticComplexityNumber)
+                printf("%s,%s,%s,%s\n", num_cycles.to_s,(lights[lights.count - 1].time - kata.created).to_s, endsOnGreen, transitions)
             end
         end
         
