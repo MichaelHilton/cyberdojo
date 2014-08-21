@@ -57,12 +57,14 @@ end
 dojo = create_dojo
 
 # temporary limiter for TESTING ONLY, remove all lines referencing 'lim' for full functionality
-lim = 10
+lim = 300
 dojo.katas.each do |kata|
     language = kata.language.name
+    lim -= 1
+    if kata.exercise.name.to_s != "Verbal"
     
     if language == "Java-1.8_JUnit" || language == "Python-unittest"
-        lim -= 1
+        
         
         kata.avatars.active.each do |avatar|
             lights = avatar.lights
@@ -147,9 +149,11 @@ dojo.katas.each do |kata|
                 printf("%s,%s,%s,", branchCoverage,statementCoverage,cyclomaticComplexityNumber)
                 printf("%s,%s,%s,%s\n", num_cycles.to_s,(lights[lights.count - 1].time - kata.created).to_s, endsOnGreen, transitions)
             end
+            end
+       
         end
-        
-    end
-    break if lim <= 0
+    
+     end
+     break if lim <= 0
 end
 
