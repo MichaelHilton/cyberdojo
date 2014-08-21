@@ -138,12 +138,13 @@ dojo.katas.each do |kata|
                 printf("num of lights:\t%s  =>  red:%s, green:%s, amber:%s\n", lights.count.to_s, num_red.to_s, num_green.to_s, num_amber.to_s)
                 printf("num of cycles:\t%s\t\ttotal lines changed:%s\n", num_cycles.to_s, kata_line_count.to_s)
                 printf("ends of green:\t%s\n", endsOnGreen)
+                printf("Branch Coverage: \t%s \tstatement coverage:%s \tcyclomatic complexity Number %s\t",branchCoverage,statementCoverage,cyclomaticComplexityNumber)
                 printf("total time: \t%s\n", lights[lights.count - 1].time - kata.created)
                 printf("log:\t\t%s\n\n", transitions)
                 else
                 printf("%s,%s,%s,%s,%s,", kata.id.to_s, language, kata.exercise.name.to_s, kata.avatars.count.to_s, avatar.name)
                 printf("%s,%s,%s,%s,%s,",avatar.path, lights.count.to_s, num_red.to_s, num_green.to_s, num_amber.to_s)
-              #  printf("%s,%s,%s", branchCoverage,statementCoverage,cyclomaticComplexityNumber)
+                printf("%s,%s,%s", branchCoverage,statementCoverage,cyclomaticComplexityNumber)
                 printf("%s,%s,%s\n", num_cycles.to_s, endsOnGreen, transitions)
             end
         end
