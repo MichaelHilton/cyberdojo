@@ -57,7 +57,6 @@ end
 dojo = create_dojo
 
 # temporary limiter for TESTING ONLY, remove all lines referencing 'lim' for full functionality
-lim = 20
 dojo.katas.each do |kata|
     language = kata.language.name
     
@@ -110,12 +109,26 @@ dojo.katas.each do |kata|
             line_count = calcLines(avatar, lights[lights.count - 2], lights[lights.count - 1])
             num_cycles, start_cycle_time, transitions = parseLight(lights[lights.count - 1].colour.to_s, lights[lights.count - 2].colour.to_s, num_cycles, start_cycle_time, lights[lights.count - 1].time, start_light_time, lights[lights.count - 1].time, line_count, transitions, true, cycle_lines)
 
-            #if File.exist?(avatar.path+ 'CodeCoverageReport.csv')
-             #  branchCoverage =  codeCoverageCSV[2][6]
-             #   statementCoverage =  codeCoverageCSV[2][16]
-            #end
-            #cyclomaticComplexity = `./javancss "#{avatar.path + "sandbox/*.java"}"`
-            #cyclomaticComplexityNumber =  cyclomaticComplexity.scan(/\d/).join('')
+            
+            if language == "Java-1.8_JUnit"
+                if File.exist?(avatar.path+ 'CodeCoverageReport.csv')
+                    codeCoverageCSV = CSV.read(avatar.path+ 'CodeCoverageReport.csv')
+                    branchCoverage =  codeCoverageCSV[2][6]
+                    statementCoverage =  codeCoverageCSV[2][16]
+                end
+                cyclomaticComplexity = `./javancss "#{avatar.path + "sandbox/*.java"}" 2>/dev/null`
+                cyclomaticComplexityNumber =  cyclomaticComplexity.scan(/\d/).join('')
+            end
+            if language == "Python-unittest"
+                if File.exist?(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
+                    codeCoverageCSV = CSV.read(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
+                    #NOT SUPPORTED BY PYTHON LIBRARY
+                    #branchCoverage =  codeCoverageCSV[1][6]
+                    statementCoverage =  (codeCoverageCSV[1][3].to_f)/100
+                    cyclomaticComplexityNumber = codeCoverageCSV[1][4]
+                end
+            end
+            
             
             if arg == "true"
                 printf("kata id:\t%s\nexercise:\t%s\nlanguage:\t%s\n", kata.id.to_s, kata.exercise.name.to_s, language)
@@ -135,5 +148,6 @@ dojo.katas.each do |kata|
         end
         
     end
+    break if lim <= 0
 end
 
