@@ -103,37 +103,4 @@ dojo.katas.each do |kata|
         end
         
     end
-    
-    break if lim <= 0
 end
-              #       kata.exercise.name.to_s,
-                #       kata.avatars.count.to_s,
-                #       avatar.name,
-                #       avatar.path,
-                #       lights.count.to_s,
-                #       transitionsString,
-                #       kata_line_count.to_s,
-                #       num_red,
-                #       num_green,
-                #       endsOnGreen,
-                #       num_amber,
-                #       total_cycles,
-                #       cyclomaticComplexity)
-                
-                printf("\n%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",kata.id.to_s,kata.exercise.name.to_s,kata.avatars.count.to_s,avatar.name,avatar.path,lights.count.to_s,transitionsString,kata_line_count.to_s,num_red,num_green,endsOnGreen,num_amber,total_cycles,cyclomaticComplexity,branchCoverage,statementCoverage)
-                
-                #printf("\nKata id:%s\nKata name:%s\nNumber of Avatars in Kata:%s\nAvatar Name:%s\nAvatar Path:%s\nTotal Number of Lights:%s\nTotal Red Lights:%s\nTotal Green Lights:%s\nTotal Amber Lights%s\ntransitionString:%s\nTotal Lines changed in kata:%s",kata.id.to_s,kata.exercise.name.to_s,kata.avatars.count.to_s,avatar.name,avatar.path,lights.count.to_s,num_red,num_green,num_amber,transitionsString,kata_line_count.to_s)
-                #puts
-            end
-        end
-        rescue Exception => error
-        exceptions << error.message
-    end
-    #dot_count += 1
-    
-    #print "\r " + dots(dot_count)
-end
-puts
-puts
-
-
