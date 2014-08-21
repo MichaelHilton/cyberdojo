@@ -17,7 +17,7 @@ end
 dojo = create_dojo
 
 # temporary limiter for TESTING ONLY, remove all lines referencing 'lim' for full functionality
-lim = 40
+lim = 10
 dojo.katas.each do |kata|
     language = kata.language.name
     
@@ -84,7 +84,7 @@ dojo.katas.each do |kata|
                     branchCoverage =  codeCoverageCSV[2][6]
                     statementCoverage =  codeCoverageCSV[2][16]
                 end
-                cyclomaticComplexity = `./javancss "#{avatar.path + "sandbox/*.java"}"`
+                cyclomaticComplexity = `./javancss "#{avatar.path + "sandbox/*.java"}" 2>/dev/null`
                 cyclomaticComplexityNumber =  cyclomaticComplexity.scan(/\d/).join('')
             end
             if language == "Python-unittest"
@@ -116,4 +116,6 @@ dojo.katas.each do |kata|
         end
         
     end
+    break if lim <= 0
 end
+
