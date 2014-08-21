@@ -8,6 +8,8 @@
 # append true to the command line
 
 require File.dirname(__FILE__) + '/lib_domain'
+require 'rubygems'
+require 'hpricot'
 
 show_ids = (ARGV[0] || "false")
 
@@ -30,17 +32,13 @@ days,weekdays,languages,exercises = { },{ },{ },{ }
 dot_count = 0
 exceptions = [ ]
 cyclomaticComplexity = ""
-$stop_at = 500
+$stop_at = 5000000
 dojo.katas.each do |kata|
     begin
         $dot_count += 1
         language = kata.language.name
         
-        #puts language
-        
         kata.avatars.active.each do |avatar|
-            #puts avatar.path
-            #end
         
         if language == "Python-unittest"
             puts avatar.path
@@ -48,22 +46,12 @@ dojo.katas.each do |kata|
             allFiles =  Dir.entries(avatar.path+"sandbox")
             fileNames = []
             allFiles.each do |currFile|
-                #puts currFile
                 pythonFile = currFile.to_s =~ /.py/i
-                #puts pythonFile
-                
                 unless pythonFile.nil?
-                    #fileNameParts = currFile.split('.')
-                    #currTestClass = fileNameParts.first
-                    #puts currFile
                     fileNames.push(avatar.path+"sandbox/"+currFile)
-                    
                 end
                 
             end
-            puts  "FILENAMES:"
-            #puts fileNames
-            
             File.open("#{avatar.path}sandbox/pythonFiles.txt", "w+") do |f|
                 f.puts(fileNames)
             end
@@ -71,10 +59,19 @@ dojo.katas.each do |kata|
            `rm .figleaf`
            `./figleaf_bin/figleaf #{avatar.path}sandbox/test*.py`
            `./figleaf_bin/figleaf2html -f #{avatar.path}sandbox/pythonFiles.txt -d #{avatar.path}sandbox/pythonCodeCoverage .figleaf`
-            #puts `./figleaf_bin/figleaf #{avatar.path}sandbox/test*.py`
+           
+            doc = open(avatar.path+"sandbox/pythonCodeCoverage/index.html") { |f| Hpricot(f) }
             
-            
-            
+            trs =  doc.search("//table//tr[td]")
+            fileCodeCoverageArray = []
+            for i in 1..2
+                individualTableRows = trs[i].search("td")
+                fileCodeCoverageArray.push(individualTableRows[0].at("a").inner_html.to_s+","+individualTableRows[1].inner_html.to_s+","+individualTableRows[2].inner_html.to_s+","+individualTableRows[3].inner_html.to_s)
+            end
+            File.open("#{avatar.path}sandbox/pythonCodeCoverage.csv", "w+") do |f|
+                f.puts(fileCodeCoverageArray)
+            end
+
         end
     
         if language == "Java-1.8_JUnitAAA"
