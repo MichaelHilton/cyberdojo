@@ -30,25 +30,58 @@ days,weekdays,languages,exercises = { },{ },{ },{ }
 dot_count = 0
 exceptions = [ ]
 cyclomaticComplexity = ""
+$stop_at = 500
 dojo.katas.each do |kata|
     begin
-        
+        $dot_count += 1
         language = kata.language.name
         
-        puts language
+        #puts language
         
         kata.avatars.active.each do |avatar|
-        puts avatar.path
-        end
+            #puts avatar.path
+            #end
         
         if language == "Python-unittest"
+            puts avatar.path
+            
+            allFiles =  Dir.entries(avatar.path+"sandbox")
+            fileNames = []
+            allFiles.each do |currFile|
+                #puts currFile
+                pythonFile = currFile.to_s =~ /.py/i
+                #puts pythonFile
+                
+                unless pythonFile.nil?
+                    #fileNameParts = currFile.split('.')
+                    #currTestClass = fileNameParts.first
+                    #puts currFile
+                    fileNames.push(avatar.path+"sandbox/"+currFile)
+                    
+                end
+                
             end
+            puts  "FILENAMES:"
+            #puts fileNames
+            
+            File.open("#{avatar.path}sandbox/pythonFiles.txt", "w+") do |f|
+                f.puts(fileNames)
+            end
+
+           `rm .figleaf`
+           `./figleaf_bin/figleaf #{avatar.path}sandbox/test*.py`
+           `./figleaf_bin/figleaf2html -f #{avatar.path}sandbox/pythonFiles.txt -d #{avatar.path}sandbox/pythonCodeCoverage .figleaf`
+            #puts `./figleaf_bin/figleaf #{avatar.path}sandbox/test*.py`
+            
+            
+            
+        end
     
         if language == "Java-1.8_JUnitAAA"
 
-            kata.avatars.active.each do |avatar|
+#   kata.avatars.active.each do |avatar|
                 unless  File.exist?(avatar.path+ 'CodeCoverageReport.csv')
-                $dot_count += 1
+                
                 puts avatar.path
                 #                copyCommand =  "cp "+avatar.path + "sandbox/*.java ./calcCodeCovg/tempDir"
                 `rm ./calcCodeCovg/src/*`
@@ -85,10 +118,11 @@ dojo.katas.each do |kata|
         end
         rescue Exception => error
         exceptions << error.message
+       
     end
     #dot_count += 1
      break if $dot_count >= $stop_at
-    #print "\r " + dots(dot_count)
+     #print "\r " + dots(dot_count)
 end
 puts
 puts
