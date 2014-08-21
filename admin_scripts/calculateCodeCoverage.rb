@@ -32,7 +32,7 @@ days,weekdays,languages,exercises = { },{ },{ },{ }
 dot_count = 0
 exceptions = [ ]
 cyclomaticComplexity = ""
-$stop_at = 5000000
+$stop_at = 50
 dojo.katas.each do |kata|
     begin
         $dot_count += 1
@@ -42,6 +42,7 @@ dojo.katas.each do |kata|
         
         if language == "Python-unittest"
             puts avatar.path
+            #puts "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
             
             allFiles =  Dir.entries(avatar.path+"sandbox")
             fileNames = []
@@ -62,12 +63,38 @@ dojo.katas.each do |kata|
            
             doc = open(avatar.path+"sandbox/pythonCodeCoverage/index.html") { |f| Hpricot(f) }
             
+            
+            jsonComplexity = `radon cc #{avatar.path}sandbox/*.py -j`
+            #puts jsonComplexity
+            jsonData = JSON.parse(jsonComplexity)
+            
             trs =  doc.search("//table//tr[td]")
             fileCodeCoverageArray = []
             for i in 1..2
                 individualTableRows = trs[i].search("td")
-                fileCodeCoverageArray.push(individualTableRows[0].at("a").inner_html.to_s+","+individualTableRows[1].inner_html.to_s+","+individualTableRows[2].inner_html.to_s+","+individualTableRows[3].inner_html.to_s)
+                
+                currentFileNameWithPath = individualTableRows[0].at("a").inner_html.to_s
+                sumOfComplexityMetrics = 0
+                #puts currentFileNameWithPath
+                #puts "*********************************"
+                #puts jsonData[currentFileNameWithPath]
+                
+                #puts currentFileNameWithPath
+                #puts jsonData[currentFileNameWithPath]
+                jsonData[currentFileNameWithPath].each do |object|
+                    #puts object["complexity"]
+                    sumOfComplexityMetrics += object["complexity"]
+                    
+                end
+                #               puts "*********************************"
+
+#print  "sumOfComplexityMetrics:"
+                #puts sumOfComplexityMetrics
+
+                fileCodeCoverageArray.push(currentFileNameWithPath+","+individualTableRows[1].inner_html.to_s+","+individualTableRows[2].inner_html.to_s+","+individualTableRows[3].inner_html.to_s+","+sumOfComplexityMetrics.to_s)
             end
+            
+            #File.delete("#{avatar.path}sandbox/pythonCodeCoverage.csv")
             File.open("#{avatar.path}sandbox/pythonCodeCoverage.csv", "w+") do |f|
                 f.puts(fileCodeCoverageArray)
             end
