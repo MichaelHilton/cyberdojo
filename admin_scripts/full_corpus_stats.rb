@@ -97,7 +97,7 @@ dojo.katas.each do |kata|
                 else
                 printf("%s,%s,%s,%s,%s,", kata.id.to_s, language, kata.exercise.name.to_s, kata.avatars.count.to_s, avatar.name)
                 printf("%s,%s,%s,%s,%s,",avatar.path, lights.count.to_s, num_red.to_s, num_green.to_s, num_amber.to_s)
-                printf("%s,%s,%s", branchCoverage,statementCoverage,cyclomaticComplexityNumber)
+                printf("%s,%s,%s,", branchCoverage,statementCoverage,cyclomaticComplexityNumber)
                 printf("%s,%s,%s\n", num_cycles.to_s, endsOnGreen, transitions)
             end
         end
