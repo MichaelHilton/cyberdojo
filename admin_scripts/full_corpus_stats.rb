@@ -17,11 +17,11 @@ end
 dojo = create_dojo
 
 # temporary limiter for TESTING ONLY, remove all lines referencing 'lim' for full functionality
-lim = 20
+lim = 40
 dojo.katas.each do |kata|
     language = kata.language.name
     
-    if language == "Java-1.8_JUnit"
+    if language == "Java-1.8_JUnit" || language == "Python-unittest"
         lim -= 1
         
         kata.avatars.active.each do |avatar|
@@ -78,13 +78,25 @@ dojo.katas.each do |kata|
             end
             transitions += lights[lights.count-1].colour.to_s + "]"
             
-            if File.exist?(avatar.path+ 'CodeCoverageReport.csv')
-                codeCoverageCSV = CSV.read(avatar.path+ 'CodeCoverageReport.csv')
-                branchCoverage =  codeCoverageCSV[2][6]
-                statementCoverage =  codeCoverageCSV[2][16]
+            if language == "Java-1.8_JUnit"
+                if File.exist?(avatar.path+ 'CodeCoverageReport.csv')
+                    codeCoverageCSV = CSV.read(avatar.path+ 'CodeCoverageReport.csv')
+                    branchCoverage =  codeCoverageCSV[2][6]
+                    statementCoverage =  codeCoverageCSV[2][16]
+                end
+                cyclomaticComplexity = `./javancss "#{avatar.path + "sandbox/*.java"}"`
+                cyclomaticComplexityNumber =  cyclomaticComplexity.scan(/\d/).join('')
             end
-            cyclomaticComplexity = `./javancss "#{avatar.path + "sandbox/*.java"}"`
-            cyclomaticComplexityNumber =  cyclomaticComplexity.scan(/\d/).join('')
+            if language == "Python-unittest"
+                if File.exist?(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
+                    codeCoverageCSV = CSV.read(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
+                    #NOT SUPPORTED BY PYTHON LIBRARY
+                    #branchCoverage =  codeCoverageCSV[1][6]
+                    statementCoverage =  (codeCoverageCSV[1][3].to_f)/100
+                    cyclomaticComplexityNumber = codeCoverageCSV[1][4]
+                end
+            end
+            
             
             if arg == "true"
                 printf("kata id:\t%s\nexercise:\t%s\nlanguage:\t%s\n", kata.id.to_s, kata.exercise.name.to_s, language)
@@ -93,6 +105,7 @@ dojo.katas.each do |kata|
                 printf("num of lights:\t%s  =>  red:%s, green:%s, amber:%s\n", lights.count.to_s, num_red.to_s, num_green.to_s, num_amber.to_s)
                 printf("num of cycles:\t%s\t\ttotal lines changed:%s\n", num_cycles.to_s, kata_line_count.to_s)
                 printf("ends of green:\t%s\n", endsOnGreen)
+                printf("Branch Coverage:\t%s,\tstatement Covereage:%s,\tcyclomatic Complexity Number%s,", branchCoverage,statementCoverage,cyclomaticComplexityNumber)
                 printf("log:\t\t%s\n\n", transitions)
                 else
                 printf("%s,%s,%s,%s,%s,", kata.id.to_s, language, kata.exercise.name.to_s, kata.avatars.count.to_s, avatar.name)
