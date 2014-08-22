@@ -53,6 +53,7 @@ def calcLines(avatar, was, now)
             if !non_code_filenames.include?(filename) && !deleted_file(lines) && !new_file(lines)
                 line_count += lines.count { |line| line[:type] === :added }
                 line_count += lines.count { |line| line[:type] === :deleted }
+                #TODO: ADD A FILES CHANGED PER CYCLE COUNTER
             end
         end
         return line_count
