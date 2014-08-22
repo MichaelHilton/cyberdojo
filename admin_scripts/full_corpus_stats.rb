@@ -1,4 +1,8 @@
 #!/usr/bin/env ruby
+#TODO: create a not enough of a cycle with a line threshold 
+#TODO; resolve last light problem (at EOF)
+#TODO: modularize TDD Classification from parseLight
+#TODO: integrate code coverage / cyclomatic complexity tools
 
 require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
@@ -14,28 +18,35 @@ def new_file(lines)
     lines.all? { |line| line[:type] === :added }
 end
 
+def addLightData(colour, line_count, time_diff)
+    return ("{" + colour + ":" + line_count.to_s + ":" + time_diff.to_s + "}")
+end
+
+def endCycleData(start_cycle_time, end_cycle_time, cycle_lines)
+    return ";;" + start_cycle_time.to_s + ";;" + end_cycle_time.to_s + ";;" + (end_cycle_time - start_cycle_time).to_s + ";;" + cycle_lines.to_s + "]"
+end
 
 def parseLight(nowColour, wasColour, num_cycles, startCycleTime, endCycleTime, startLightTime, endLightTime, line_count, transitions, eof, cycle_lines)
     # locate cycle transitions and add '|' to designate
     if eof
         if nowColour == "green"
-            transitions += "{" + wasColour + ":" + line_count.to_s + ":" + (endLightTime - startLightTime).to_s + "}{" + nowColour + ":" + line_count.to_s + ":" + (endLightTime - startLightTime).to_s + "}"
-            transitions += ";;" + startCycleTime.to_s + ";;" + endCycleTime.to_s + ";;" + (endCycleTime - startCycleTime).to_s + ";;" + cycle_lines.to_s + "]"
-            num_cycles += 1
+            transitions += addLightData(nowColour, line_count, (endLightTime - startLightTime)) #not sure if "was" also needs to be involved here
+            transitions += endCycleData(startCycleTime, endCycleTime, cycle_lines)
+            num_cycles +=  1
             return num_cycles, endCycleTime, transitions, cycle_lines
         else 
-            transitions += "{" + wasColour + ":" + line_count.to_s + ":" + (endLightTime - startLightTime).to_s + "}" + "{" + nowColour + ":" + line_count.to_s +  ":" + (endLightTime - startLightTime).to_s + "}"
+            transitions += addLightData(nowColour, line_count, (endLightTime - startLightTime)) #not sure if "was" also needs to be involved here
             transitions += ";; NOT A CYCLE]"
             return num_cycles, endCycleTime, transitions, cycle_lines
         end
     elsif (nowColour == "red" || nowColour == "amber") && wasColour == "green"
-        transitions += "{" + wasColour + ":" + line_count.to_s + ":" + (endLightTime - startLightTime).to_s + "}"
-        transitions += ";;" + startCycleTime.to_s + ";;" + endCycleTime.to_s + ";;" + (endCycleTime - startCycleTime).to_s + ";;" + cycle_lines.to_s + "]["
+        transitions +=  addLightData(nowColour, line_count, (endLightTime - startLightTime)) 
+        transitions +=  endCycleData(startCycleTime, endCycleTime, cycle_lines)
         cycle_lines = 0
         num_cycles += 1
         return num_cycles, endCycleTime, transitions, cycle_lines
     else
-        transitions += "{" + wasColour.to_s + ":" + line_count.to_s + ":" + (endLightTime - startLightTime).to_s + "}"
+        transitions += addLightData(nowColour, line_count, (endLightTime - startLightTime)) 
         return num_cycles, startCycleTime, transitions, cycle_lines
     end    
 end
@@ -119,7 +130,7 @@ dojo.katas.each do |kata|
                 end
                 cyclomaticComplexity = `./javancss "#{avatar.path + "sandbox/*.java"}" 2>/dev/null`
                 cyclomaticComplexityNumber =  cyclomaticComplexity.scan(/\d/).join('')
-           end
+            end
             if language == "Python-unittest"
                 if File.exist?(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
                     codeCoverageCSV = CSV.read(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
