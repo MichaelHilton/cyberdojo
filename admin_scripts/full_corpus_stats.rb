@@ -1,4 +1,7 @@
 #!/usr/bin/env ruby
+#TODO: create a not enough of a cycle with a line threshold 
+#TODO: modularize TDD Classification from parseLight
+#TODO: integrate code coverage / cyclomatic complexity tools
 
 require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
@@ -14,31 +17,33 @@ def new_file(lines)
     lines.all? { |line| line[:type] === :added }
 end
 
+def addLightData(colour, line_count, time_diff)
+    return ("{" + colour + ":" + line_count.to_s + ":" + time_diff.to_s + "}")
+end
 
-def parseLight(nowColour, wasColour, num_cycles, startCycleTime, endCycleTime, startLightTime, endLightTime, line_count, transitions, eof, cycle_lines)
+def endCycleData(start_cycle_time, end_cycle_time, cycle_lines)
+    return ";;" + start_cycle_time.to_s + ";;" + end_cycle_time.to_s + ";;" + (end_cycle_time - start_cycle_time).to_s + ";;" + cycle_lines.to_s + "]"
+end
+
+def parseLight(nowColour, wasColour, num_cycles, startCycleTime, endCycleTime, startLightTime, endLightTime, line_count, transitions, cycle_lines)
+    if transitions.end_with?("]")
+        transitions += "["
+    end
+    
     # locate cycle transitions and add '|' to designate
-    if eof
-        if nowColour == "green"
-            transitions += "{" + wasColour + ":" + line_count.to_s + ":" + (endLightTime - startLightTime).to_s + "}{" + nowColour + ":" + line_count.to_s + ":" + (endLightTime - startLightTime).to_s + "}"
-            transitions += ";;" + startCycleTime.to_s + ";;" + endCycleTime.to_s + ";;" + (endCycleTime - startCycleTime).to_s + ";;" + cycle_lines.to_s + "]"
-            num_cycles += 1
-            return num_cycles, endCycleTime, transitions, cycle_lines
-        else 
-            transitions += "{" + wasColour + ":" + line_count.to_s + ":" + (endLightTime - startLightTime).to_s + "}" + "{" + nowColour + ":" + line_count.to_s +  ":" + (endLightTime - startLightTime).to_s + "}"
-            transitions += ";; NOT A CYCLE]"
-            return num_cycles, endCycleTime, transitions, cycle_lines
-        end
-    elsif (nowColour == "red" || nowColour == "amber") && wasColour == "green"
-        transitions += "{" + wasColour + ":" + line_count.to_s + ":" + (endLightTime - startLightTime).to_s + "}"
-        transitions += ";;" + startCycleTime.to_s + ";;" + endCycleTime.to_s + ";;" + (endCycleTime - startCycleTime).to_s + ";;" + cycle_lines.to_s + "]["
+
+    if (nowColour == "red" || nowColour == "amber") && wasColour == "green"
+        transitions +=  endCycleData(startCycleTime, endCycleTime, cycle_lines) + "["
+        transitions +=  addLightData(nowColour, line_count, (endLightTime - startLightTime)) 
         cycle_lines = 0
         num_cycles += 1
         return num_cycles, endCycleTime, transitions, cycle_lines
     else
-        transitions += "{" + wasColour.to_s + ":" + line_count.to_s + ":" + (endLightTime - startLightTime).to_s + "}"
+        transitions += addLightData(nowColour, line_count, (endLightTime - startLightTime)) 
         return num_cycles, startCycleTime, transitions, cycle_lines
     end    
 end
+
 def calcLines(avatar, was, now)
     # determine number of lines changed between lights
         line_count = 0;
@@ -53,6 +58,8 @@ def calcLines(avatar, was, now)
         return line_count
 end
 
+def categorize_colour(colour)
+end
 
 dojo = create_dojo
 
@@ -76,43 +83,53 @@ dojo.katas.each do |kata|
             start_cycle_time = kata.created
             start_light_time = kata.created
             cycle_lines = 0
+            line_count = 0
             
             transitions = "["
-            lights.each_cons(2) do |was,now|
-                case was.colour.to_s
-                    when "red"
+            
+            #parse first light
+            num_cycles, start_cycle_time, transitions = parseLight(lights[0].colour.to_s, "none", num_cycles, start_cycle_time, lights[0].time, start_light_time, lights[0].time, line_count, transitions, cycle_lines)
+            case lights[0].colour.to_s
+                when "red"
                     num_red += 1
-                    when "green"
+                when "green"
                     num_green += 1
-                    when "amber"
+                when "amber"
                     num_amber += 1
+            end
+            start_light_time = lights[0].time
+            cycle_lines += line_count
+            kata_line_count += line_count
+            
+            
+            lights.each_cons(2) do |was,now|
+                case now.colour.to_s
+                    when "red"
+                        num_red += 1
+                    when "green"
+                        num_green += 1
+                    when "amber"
+                        num_amber += 1
                 end
            
                 # determine number of lines changed between lights
                 line_count = calcLines(avatar, was, now)
                 
                 #parse cycle data from current state of lights
-                num_cycles, start_cycle_time, transitions = parseLight(now.colour.to_s, was.colour.to_s, num_cycles, start_cycle_time, was.time, start_light_time, was.time, line_count, transitions, false, cycle_lines)
-                start_light_time = was.time
+                num_cycles, start_cycle_time, transitions = parseLight(now.colour.to_s, was.colour.to_s, num_cycles, start_cycle_time, was.time, start_light_time, now.time, line_count, transitions, cycle_lines)
+                start_light_time = now.time
                 cycle_lines += line_count
                 kata_line_count += line_count
             end
-            
-            # handle last light that was examined by consecutive loop above
-            case lights[lights.count-1].colour.to_s
-                when "red"
-                num_red += 1
-                when "green"
-                num_green += 1
+                        
+            if lights[lights.count - 1].colour.to_s.eql?("green")
                 endsOnGreen = true
-                when "amber"
-                num_amber += 1
+                transitions +=  endCycleData(start_cycle_time, lights[lights.count - 1].time , cycle_lines)
+            else
+                transitions += ";; NOT A CYCLE]"
+                endsOnGreen = false
             end
-
-            line_count = calcLines(avatar, lights[lights.count - 2], lights[lights.count - 1])
-            num_cycles, start_cycle_time, transitions = parseLight(lights[lights.count - 1].colour.to_s, lights[lights.count - 2].colour.to_s, num_cycles, start_cycle_time, lights[lights.count - 1].time, start_light_time, lights[lights.count - 1].time, line_count, transitions, true, cycle_lines)
-
-            
+          
             if language == "Java-1.8_JUnit"
                 if File.exist?(avatar.path+ 'CodeCoverageReport.csv')
                     codeCoverageCSV = CSV.read(avatar.path+ 'CodeCoverageReport.csv')
@@ -121,7 +138,7 @@ dojo.katas.each do |kata|
                 end
                 cyclomaticComplexity = `./javancss "#{avatar.path + "sandbox/*.java"}" 2>/dev/null`
                 cyclomaticComplexityNumber =  cyclomaticComplexity.scan(/\d/).join('')
-           end
+            end
             if language == "Python-unittest"
                 if File.exist?(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
                     codeCoverageCSV = CSV.read(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
@@ -131,7 +148,6 @@ dojo.katas.each do |kata|
                     cyclomaticComplexityNumber = codeCoverageCSV[1][4]
                 end
             end
-            
             
             if arg == "true"
                 printf("kata id:\t%s\nexercise:\t%s\nlanguage:\t%s\n", kata.id.to_s, kata.exercise.name.to_s, language)
