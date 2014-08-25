@@ -90,8 +90,7 @@ dojo.katas.each do |kata|
             cycle_lines = 0
             line_count = 0
             loc_count = 0
-            
-            transitions = "["
+            transitions = "["   
             
             allFiles =  Dir.entries(avatar.path+"sandbox")
             allFiles.each do |currFile|
@@ -99,10 +98,11 @@ dojo.katas.each do |kata|
                 unless isFile.nil?
                     file = avatar.path.to_s + "sandbox/" + currFile.to_s
                     command = `sloccount --details #{file}`
-                    loc_count += command.lines.last.split(" ").first.to_i
+                    value = command.split("\n").last
+                    loc_count += value.split(" ").first.to_i
                 end
             end
-
+            
             #parse first light
             num_cycles, start_cycle_time, transitions = parseLight(lights[0].colour.to_s, "none", num_cycles, start_cycle_time, lights[0].time, start_light_time, lights[0].time, line_count, transitions, cycle_lines)
             case lights[0].colour.to_s
