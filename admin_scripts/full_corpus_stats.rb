@@ -68,20 +68,27 @@ end
 
 dojo = create_dojo
 
-# temporary limiter for TESTING ONLY, remove all lines referencing 'lim' for full functionality
-lim = 300
+path = Dir.pwd.to_s+"/corpus.csv"
+if File.exist?(path)
+    File.delete(path)
+end
+f = File.new(path, "w+")
+
+# limiter that halts after 'lim' number of katas
+lim = 500
+count = 0
+all_katas = Array.new()
+
 dojo.katas.each do |kata|
     language = kata.language.name
-    lim -= 1
-    if kata.exercise.name.to_s != "Verbal"
-    
-    #if language == "Java-1.8_JUnit" || language == "Python-unittest"
-        
-        
+
+    if kata.exercise.name.to_s != "Verbal" && (language == "Java-1.8_JUnit" || language == "Python-unittest")
+        count += 1
+
         kata.avatars.active.each do |avatar|
+            kata_meta = [kata.id.to_s, language.to_s, kata.avatars.count.to_s, avatar.name.to_s, kata.created.to_s, kata.exercise.name.to_s, avatar.path.to_s, avatar.lights.count.to_s]
             lights = avatar.lights
-            num_lights = lights.count
-            num_cycles = 1
+            num_cycles = 0
             kata_line_count = 0
             num_red, num_green, num_amber = 0, 0, 0
             endsOnGreen = false
@@ -98,10 +105,12 @@ dojo.katas.each do |kata|
                 isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.h$|\.hpp$/i
                 unless isFile.nil?
                     file = avatar.path.to_s + "sandbox/" + currFile.to_s
+                    # the `shell command` does not capture error messages sent to stderr
                     command = `sloccount --details #{file}`
                     loc_count += command.lines.last.split(" ").first.to_i
                 end
             end
+            kata_meta.push(loc_count.to_s)
 
             #parse first light
             num_cycles, start_cycle_time, transitions = parseLight(lights[0].colour.to_s, "none", num_cycles, start_cycle_time, lights[0].time, start_light_time, lights[0].time, line_count, transitions, cycle_lines)
@@ -116,7 +125,6 @@ dojo.katas.each do |kata|
             start_light_time = lights[0].time
             cycle_lines += line_count
             kata_line_count += line_count
-            
             
             lights.each_cons(2) do |was,now|
                 case now.colour.to_s
@@ -140,6 +148,7 @@ dojo.katas.each do |kata|
                         
             if lights[lights.count - 1].colour.to_s.eql?("green")
                 endsOnGreen = true
+                num_cycles += 1
                 transitions +=  endCycleData(start_cycle_time, lights[lights.count - 1].time , cycle_lines)
             else
                 transitions += ";; NOT A CYCLE]"
@@ -164,10 +173,35 @@ dojo.katas.each do |kata|
                     cyclomaticComplexityNumber = codeCoverageCSV[1][4]
                 end
             end
-            
+            kata_meta.push(cyclomaticComplexityNumber.to_s, statementCoverage.to_s, branchCoverage.to_s)
+            kata_meta.push(num_red.to_s, num_green.to_s, num_amber.to_s, num_cycles.to_s, endsOnGreen)
+            kata_meta.push((lights[lights.count - 1].time - kata.created).to_s)
+            kata_meta.push(transitions)
 
-            # prints do not include loc_count
-            if arg == "true"
+            all_katas.push(kata_meta)
+        end
+
+        if count % 10 == 0
+            print '.'
+        end
+        if count % 100 == 0
+            print '\n'
+        end
+
+        break if count == lim   
+    end
+end
+
+# prints do not include loc_count
+if arg == "true"
+    all_katas.each_with_index do |kata, index|
+        print index.to_s + ': '
+        kata.each do |value|
+            print value + ','
+        end
+        puts ""
+    end 
+=begin
                 printf("kata id:\t%s\nexercise:\t%s\nlanguage:\t%s\n", kata.id.to_s, kata.exercise.name.to_s, language)
                 printf("avatar:\t\t%s [%s in kata]\n", avatar.name, kata.avatars.count.to_s)
                 printf("path:\t\t%s\n", avatar.path)
@@ -177,17 +211,11 @@ dojo.katas.each do |kata|
                 printf("Branch Coverage: \t%s \tstatement coverage:%s \tcyclomatic complexity Number %s\t",branchCoverage,statementCoverage,cyclomaticComplexityNumber)
                 printf("total time: \t%s\n", lights[lights.count - 1].time - kata.created)
                 printf("log:\t\t%s\n\n", transitions)
-            else
-                printf("%s,%s,%s,%s,%s,", kata.id.to_s, language, kata.exercise.name.to_s, kata.avatars.count.to_s, avatar.name)
-                printf("%s,%s,%s,%s,%s,",avatar.path, lights.count.to_s, num_red.to_s, num_green.to_s, num_amber.to_s)
-                printf("%s,%s,%s,", branchCoverage,statementCoverage,cyclomaticComplexityNumber)
-                printf("%s,%s,%s,%s\n", num_cycles.to_s,(lights[lights.count - 1].time - kata.created).to_s, endsOnGreen, transitions)
-            end
-            end
-
-        end
-    
-    #end
-    break if lim <= 0
+=end
+else
+    f.write(kata_meta)
+    f.write('\n')
 end
+
+puts "[done]"
 
