@@ -75,21 +75,10 @@ dojo.katas.each do |kata|
     lim -= 1
     if kata.exercise.name.to_s != "Verbal"
     
-    if language == "Java-1.8_JUnit" || language == "Python-unittest"
+    #if language == "Java-1.8_JUnit" || language == "Python-unittest"
         
         
         kata.avatars.active.each do |avatar|
-            total_LOC = 0
-            allFiles =  Dir.entries(avatar.path+"sandbox")
-            allFiles.each do |currFile|
-                if currFile.to_s.include? ".c" ".h" ".java" ".py"
-                    puts "currFile: " + currFile.to_s
-                    #results = `sloccount --details #{currFile.to_s}`
-                    #puts "results: " + results
-                end
-                
-            end
-            
             lights = avatar.lights
             num_lights = lights.count
             num_cycles = 1
@@ -100,9 +89,20 @@ dojo.katas.each do |kata|
             start_light_time = kata.created
             cycle_lines = 0
             line_count = 0
+            loc_count = 0
             
             transitions = "["
             
+            allFiles =  Dir.entries(avatar.path+"sandbox")
+            allFiles.each do |currFile|
+                isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.h$|\.hpp$/i
+                unless isFile.nil?
+                    file = avatar.path.to_s + "sandbox/" + currFile.to_s
+                    command = `sloccount --details #{file}`
+                    loc_count += command.lines.last.split(" ").first.to_i
+                end
+            end
+
             #parse first light
             num_cycles, start_cycle_time, transitions = parseLight(lights[0].colour.to_s, "none", num_cycles, start_cycle_time, lights[0].time, start_light_time, lights[0].time, line_count, transitions, cycle_lines)
             case lights[0].colour.to_s
@@ -165,7 +165,9 @@ dojo.katas.each do |kata|
                 end
             end
             
-=begin            if arg == "true"
+
+            # prints do not include loc_count
+            if arg == "true"
                 printf("kata id:\t%s\nexercise:\t%s\nlanguage:\t%s\n", kata.id.to_s, kata.exercise.name.to_s, language)
                 printf("avatar:\t\t%s [%s in kata]\n", avatar.name, kata.avatars.count.to_s)
                 printf("path:\t\t%s\n", avatar.path)
@@ -181,13 +183,11 @@ dojo.katas.each do |kata|
                 printf("%s,%s,%s,", branchCoverage,statementCoverage,cyclomaticComplexityNumber)
                 printf("%s,%s,%s,%s\n", num_cycles.to_s,(lights[lights.count - 1].time - kata.created).to_s, endsOnGreen, transitions)
             end
-=end
-
             end
 
         end
     
-     end
-     break if lim <= 0
+    #end
+    break if lim <= 0
 end
 
