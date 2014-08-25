@@ -82,8 +82,10 @@ dojo.katas.each do |kata|
             total_LOC = 0
             allFiles =  Dir.entries(avatar.path+"sandbox")
             allFiles.each do |currFile|
-                if currFile.to_s.include? '.c' '.h' '.java' '.py' 
-                    ``
+                if currFile.to_s.include? ".c" ".h" ".java" ".py"
+                    puts "currFile: " + currFile.to_s
+                    #results = `sloccount --details #{currFile.to_s}`
+                    #puts "results: " + results
                 end
                 
             end
@@ -163,7 +165,7 @@ dojo.katas.each do |kata|
                 end
             end
             
-            if arg == "true"
+=begin            if arg == "true"
                 printf("kata id:\t%s\nexercise:\t%s\nlanguage:\t%s\n", kata.id.to_s, kata.exercise.name.to_s, language)
                 printf("avatar:\t\t%s [%s in kata]\n", avatar.name, kata.avatars.count.to_s)
                 printf("path:\t\t%s\n", avatar.path)
@@ -179,8 +181,10 @@ dojo.katas.each do |kata|
                 printf("%s,%s,%s,", branchCoverage,statementCoverage,cyclomaticComplexityNumber)
                 printf("%s,%s,%s,%s\n", num_cycles.to_s,(lights[lights.count - 1].time - kata.created).to_s, endsOnGreen, transitions)
             end
+=end
+
             end
-       
+
         end
     
      end
