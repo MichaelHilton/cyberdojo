@@ -1,7 +1,12 @@
 #!/usr/bin/env ruby
+#PRORITY
 #TODO: create a not enough of a cycle with a line threshold 
 #TODO: modularize TDD Classification from parseLight
-#TODO: integrate code coverage / cyclomatic complexity tools
+#TODO: Total lines of code
+
+#NON-PRIORITY
+#TODO: find lines for first Light 
+
 
 require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
@@ -31,7 +36,6 @@ def parseLight(nowColour, wasColour, num_cycles, startCycleTime, endCycleTime, s
     end
     
     # locate cycle transitions and add '|' to designate
-
     if (nowColour == "red" || nowColour == "amber") && wasColour == "green"
         transitions +=  endCycleData(startCycleTime, endCycleTime, cycle_lines) + "["
         transitions +=  addLightData(nowColour, line_count, (endLightTime - startLightTime)) 
@@ -72,6 +76,15 @@ dojo.katas.each do |kata|
         lim -= 1
         
         kata.avatars.active.each do |avatar|
+            total_LOC = 0
+            allFiles =  Dir.entries(avatar.path+"sandbox")
+            allFiles.each do |currFile|
+                if currFile.to_s.include? '.c' '.h' '.java' '.py' 
+                    ``
+                end
+                
+            end
+            
             lights = avatar.lights
             num_lights = lights.count
             num_cycles = 1
@@ -157,7 +170,7 @@ dojo.katas.each do |kata|
                 printf("Branch Coverage: \t%s \tstatement coverage:%s \tcyclomatic complexity Number %s\t",branchCoverage,statementCoverage,cyclomaticComplexityNumber)
                 printf("total time: \t%s\n", lights[lights.count - 1].time - kata.created)
                 printf("log:\t\t%s\n\n", transitions)
-                else
+            else
                 printf("%s,%s,%s,%s,%s,", kata.id.to_s, language, kata.exercise.name.to_s, kata.avatars.count.to_s, avatar.name)
                 printf("%s,%s,%s,%s,%s,",avatar.path, lights.count.to_s, num_red.to_s, num_green.to_s, num_amber.to_s)
                 printf("%s,%s,%s,", branchCoverage,statementCoverage,cyclomaticComplexityNumber)
