@@ -25,14 +25,13 @@ end
 $dot_count = 0
 dojo = create_dojo
 
-$stop_at = 10000000
+$stop_at = 3000000
 
 puts
 days,weekdays,languages,exercises = { },{ },{ },{ }
 dot_count = 0
 exceptions = [ ]
 cyclomaticComplexity = ""
-$stop_at = 50
 dojo.katas.each do |kata|
     begin
         $dot_count += 1
@@ -41,8 +40,14 @@ dojo.katas.each do |kata|
         kata.avatars.active.each do |avatar|
         
         if language == "Python-unittest"
+            puts "PYTHON"
             puts avatar.path
             #puts "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+            `rm #{avatar.path}sandbox/pythonFiles.txt`
+            `rm #{avatar.path}sandbox/pythonCodeCoverage.csv`
+            `rm -rf #{avatar.path}sandbox/pythonCodeCoverage`
+            #puts "rm #{avatar.path}sandbox/*.pyc"
+            `rm #{avatar.path}sandbox/*.pyc`
             
             allFiles =  Dir.entries(avatar.path+"sandbox")
             fileNames = []
@@ -58,7 +63,7 @@ dojo.katas.each do |kata|
             end
 
            `rm .figleaf`
-           `./figleaf_bin/figleaf #{avatar.path}sandbox/test*.py`
+           `./figleaf_bin/figleaf #{avatar.path}sandbox/test*.py `
            `./figleaf_bin/figleaf2html -f #{avatar.path}sandbox/pythonFiles.txt -d #{avatar.path}sandbox/pythonCodeCoverage .figleaf`
            
             doc = open(avatar.path+"sandbox/pythonCodeCoverage/index.html") { |f| Hpricot(f) }
@@ -101,11 +106,11 @@ dojo.katas.each do |kata|
 
         end
     
-        if language == "Java-1.8_JUnitAAA"
-
+        if language == "Java-1.8_JUnit"
+                puts "JAVA"
 #   kata.avatars.active.each do |avatar|
                 unless  File.exist?(avatar.path+ 'CodeCoverageReport.csv')
-                
+                touch `#{avatar.path}CodeCoverageReport.csv`
                 puts avatar.path
                 #                copyCommand =  "cp "+avatar.path + "sandbox/*.java ./calcCodeCovg/tempDir"
                 `rm ./calcCodeCovg/src/*`
