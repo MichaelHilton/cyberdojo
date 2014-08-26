@@ -5,7 +5,8 @@
 #TODO: Total lines of code
 
 #NON-PRIORITY
-#TODO: find lines for first Light 
+#TODO: find lines for first Light
+#RUN THIS IN MAC TO GET RID OF MD% ERRORS : PATH="/usr/local/opt/coreutils/libexec/gnubin:$PATH"
 
 
 require File.dirname(__FILE__) + '/lib_domain'
@@ -75,9 +76,10 @@ end
 f = File.new(path, "w+")
 
 # limiter that halts after 'lim' number of katas
-lim = 500
+lim = 10
 count = 0
 all_katas = Array.new()
+kata_meta = ""
 
 dojo.katas.each do |kata|
     language = kata.language.name
@@ -86,7 +88,25 @@ dojo.katas.each do |kata|
         count += 1
 
         kata.avatars.active.each do |avatar|
-            kata_meta = [kata.id.to_s, language.to_s, kata.avatars.count.to_s, avatar.name.to_s, kata.created.to_s, kata.exercise.name.to_s, avatar.path.to_s, avatar.lights.count.to_s]
+            #kata_meta = [kata.id.to_s, language.to_s, kata.avatars.count.to_s, avatar.name.to_s, kata.created.to_s, kata.exercise.name.to_s, avatar.path.to_s, avatar.lights.count.to_s]
+            kata_meta = kata.id.to_s
+            kata_meta +=","
+            kata_meta += language.to_s
+            kata_meta +=","
+            kata_meta += kata.avatars.count.to_s
+            kata_meta +=","
+            kata_meta += avatar.name.to_s
+            kata_meta +=","
+            kata_meta += kata.created.to_s
+            kata_meta +=","
+            kata_meta += kata.exercise.name.to_s
+            kata_meta +=","
+            kata_meta += avatar.path.to_s
+            kata_meta +=","
+            kata_meta +=avatar.lights.count.to_s
+            kata_meta += ","
+            
+            
             lights = avatar.lights
             num_cycles = 0
             kata_line_count = 0
@@ -105,13 +125,16 @@ dojo.katas.each do |kata|
                 unless isFile.nil?
                     file = avatar.path.to_s + "sandbox/" + currFile.to_s
                     # the `shell command` does not capture error messages sent to stderr
+
                     command = `sloccount --details #{file}`
                     value = command.split("\n").last
                     loc_count += value.split(" ").first.to_i
                 end
             end
 
-            kata_meta.push(loc_count.to_s)
+            kata_meta += loc_count.to_s
+            kata_meta += ","
+            
 
             #parse first light
             num_cycles, start_cycle_time, transitions = parseLight(lights[0].colour.to_s, "none", num_cycles, start_cycle_time, lights[0].time, start_light_time, lights[0].time, line_count, transitions, cycle_lines)
@@ -174,11 +197,22 @@ dojo.katas.each do |kata|
                     cyclomaticComplexityNumber = codeCoverageCSV[1][4]
                 end
             end
-            kata_meta.push(cyclomaticComplexityNumber.to_s, statementCoverage.to_s, branchCoverage.to_s)
-            kata_meta.push(num_red.to_s, num_green.to_s, num_amber.to_s, num_cycles.to_s, endsOnGreen)
-            kata_meta.push((lights[lights.count - 1].time - kata.created).to_s)
-            kata_meta.push(transitions)
-
+            #kata_meta.push(cyclomaticComplexityNumber.to_s, statementCoverage.to_s, branchCoverage.to_s)
+            #kata_meta.push(num_red.to_s, num_green.to_s, num_amber.to_s, num_cycles.to_s, endsOnGreen)
+            #kata_meta.push((lights[lights.count - 1].time - kata.created).to_s)
+            #kata_meta.push(transitions)
+            
+            kata_meta +=cyclomaticComplexityNumber.to_s
+            kata_meta += ","
+            kata_meta += statementCoverage.to_s
+            kata_meta +=","
+            kata_meta += branchCoverage.to_s
+            kata_meta += ","
+            kata_meta += num_red.to_s+","+ num_green.to_s+","+ num_amber.to_s+","+ num_cycles.to_s+","+endsOnGreen.to_s+","
+            kata_meta += ((lights[lights.count - 1].time - kata.created).to_s) +","
+            kata_meta += transitions
+            kata_meta += "\n"
+            
             all_katas.push(kata_meta)
         end
 
@@ -213,10 +247,14 @@ if arg == "true"
                 printf("total time: \t%s\n", lights[lights.count - 1].time - kata.created)
                 printf("log:\t\t%s\n\n", transitions)
 =end
+
+
 else
-    f.write(kata_meta)
-    f.write('\n')
+#f.write(all_katas)
+    #    f.write('\n')
+        f.puts(all_katas)
 end
+puts all_katas
 
 puts "[done]"
 
