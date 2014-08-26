@@ -2,7 +2,6 @@
 
 require File.dirname(__FILE__) + '/lib_domain'
 require File.dirname(__FILE__) + '/meta_kata'
-require 'csv'
 
 kata_limit = 25
 lang_limit = ["Java-1.8_JUnit", "Python-unittest"]
@@ -16,7 +15,6 @@ dojo.katas.each do |kata|
 			count += 1
 
 			mk = MetaKata.new
-			mk.in_cycle  = false
 			mk.id = kata.id
 			mk.language = kata.language.name
 			mk.participants = kata.avatars.count
@@ -25,20 +23,7 @@ dojo.katas.each do |kata|
 			mk.name = kata.exercise.name
 			mk.path = avatar.path
 			mk.totallights = avatar.lights.count
-
-			# 
-			allFiles =  Dir.entries(avatar.path+"sandbox")
-			allFiles.each do |currFile|
-				isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.h$|\.hpp$/i
-				unless isFile.nil?
-					file = avatar.path.to_s + "sandbox/" + currFile.to_s
-					# the `shell command` does not capture error messages sent to stderr
-        
-					command = `sloccount --details #{file}`
-					value = command.split("\n").last
-					mk.sloc += value.split(" ").first.to_i
-				end
-			end
+			mk.parse(avatar)
 
 			mk.print
 		end
