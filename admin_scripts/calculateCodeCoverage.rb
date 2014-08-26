@@ -25,7 +25,7 @@ end
 $dot_count = 0
 dojo = create_dojo
 
-$stop_at = 30
+$stop_at = 40000000
 
 puts
 days,weekdays,languages,exercises = { },{ },{ },{ }
@@ -42,7 +42,7 @@ dojo.katas.each do |kata|
             if language == "Python-unittest"
                 puts "PYTHON"
                 puts avatar.path
-                unless  File.exist?(avatar.path+ 'CodeCoverageReport.csv')
+                unless  File.exist?(avatar.path+ 'sandbox/CodeCoverageReport.csv')
                     
                     #puts "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
                     `rm #{avatar.path}sandbox/pythonFiles.txt`
@@ -117,7 +117,7 @@ dojo.katas.each do |kata|
                 unless  File.exist?(avatar.path+ 'CodeCoverageReport.csv')
                     print "ADDING CODE COVERAGE FOR: "
                     puts avatar.path
-                    touch `#{avatar.path}CodeCoverageReport.csv`
+                    `touch #{avatar.path}CodeCoverageReport.csv`
                     puts avatar.path
                     #                copyCommand =  "cp "+avatar.path + "sandbox/*.java ./calcCodeCovg/tempDir"
                     `rm ./calcCodeCovg/src/*`
