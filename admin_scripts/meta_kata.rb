@@ -44,13 +44,18 @@ class MetaKata
 		end
 	end
 
-	def save(save_path)
-		if File.exist?(save_path)
-			File.delete(save_path)
+	def init_file(path)
+		if File.exist?(path)
+			File.delete(path)
 		end
-		f = File.new(save_path, "w+")
 
-		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@path},#{@start_date},#{@total_time},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@ends_green},#{@transitions}")
+		f = File.new(path, "a+")
+		f.puts("KataID,Language,KataName,NumParticipants,Animal,Path,StartDate,secsInKata,TotalLights,RedLights,GreenLights,AmberLights,SLOC,EditedLines,CCNum,BranchCoverage,StatementCoverage,NumCycles,EndsInGreen,TransitionString")
+	end
+
+	def save(path)
+		f = File.new(path, "a+")
+		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@animal},#{@path},#{@startdate},#{@seconds},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@endingreen},#{@transitions}")
 	end
 
 	def add_light(colour, line_count, time_diff)
@@ -64,10 +69,6 @@ class MetaKata
         end
         @transitions += "{" + colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
 	end
-
-	def endCycle(endcycle)
-        return "," + @start_cycle.to_s + "," + endcycle.to_s + "," + (endcycle - @start_cycle.to_i).to_s + ",`" + @cycle_lines.to_s + "]"
-    end
 
 	def deleted_file(lines)
     	lines.all? { |line| line[:type] === :deleted }
@@ -144,8 +145,9 @@ class MetaKata
 			if @in_cycle == true
 				if curr.colour.to_s == "green"
 					# End cycle
-	                @transitions +=  endCycle(curr.time)
-	                @start_cycle = curr.time
+			cycle_info = "<<" + @startcycle.to_s + ":" + curr.time.to_s + ":" + (curr.time - @startcycle.to_i).to_s + ":" + @cycle_lines.to_s + ">>]"
+	                @transitions +=  cycle_info
+	                @startcycle = curr.time
 	                @cycle_lines = 0
 	                @in_cycle = false
 	                @cycles += 1    
