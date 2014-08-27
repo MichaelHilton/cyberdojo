@@ -44,9 +44,7 @@ dojo.katas.each do |kata|
 end
 puts "[#{count}]"
 
-if File.exist?(save_file)
-	File.delete(save_file)
-end
+MetaKata.new.init_file(save_file)
 
 all_kata.each do |kata|
 	kata.save(save_file)

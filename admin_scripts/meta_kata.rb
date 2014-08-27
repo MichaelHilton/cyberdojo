@@ -41,9 +41,18 @@ class MetaKata
 		end
 	end
 
+	def init_file(path)
+		if File.exist?(path)
+			File.delete(path)
+		end
+
+		f = File.new(path, "a+")
+		f.puts("KataID,Language,KataName,NumParticipants,Animal,Path,StartDate,secsInKata,TotalLights,RedLights,GreenLights,AmberLights,SLOC,EditedLines,CCNum,BranchCoverage,StatementCoverage,NumCycles,EndsInGreen,TransitionString")
+	end
+
 	def save(path)
 		f = File.new(path, "a+")
-		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@path},#{@startdate},#{@seconds},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@endingreen},#{@transitions}")
+		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@animal},#{@path},#{@startdate},#{@seconds},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@endingreen},#{@transitions}")
 	end
 
 	def add_light(colour, line_count, time_diff)
