@@ -44,7 +44,7 @@ class MetaKata
 		end
 	end
 
-	def init_file(path)
+	def self.init_file(path)
 		if File.exist?(path)
 			File.delete(path)
 		end

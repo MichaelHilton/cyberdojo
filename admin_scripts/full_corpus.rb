@@ -7,8 +7,9 @@ kata_limit = 25
 lang_limit = ["Java-1.8_JUnit", "Python-unittest"]
 save_file = Dir.pwd.to_s + "/test.csv"
 
+MetaKata.init_file(save_file)
+
 dojo = create_dojo
-all_kata = Array.new
 
 count = 0
 dojo.katas.each do |kata|
@@ -23,7 +24,7 @@ dojo.katas.each do |kata|
 			#mk.coverage_metrics
 			mk.print
 
-			all_kata.push(mk)
+			mk.save(save_file)
 
 			if count % 5 == 0
 				print "."
@@ -39,9 +40,3 @@ dojo.katas.each do |kata|
 	break if count >= kata_limit
 end
 puts "[#{count}]"
-
-MetaKata.new.init_file(save_file)
-
-all_kata.each do |kata|
-	kata.save(save_file)
-end
