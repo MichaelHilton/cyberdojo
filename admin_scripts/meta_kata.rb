@@ -11,6 +11,8 @@ class MetaKata
 		@avatar = avatar
 		@path = avatar.path
 
+		@TIME_CEILING = 1200 # Time Ceiling in Seconds Per Light
+
 		@id = kata.id
 		@language = kata.language.name
 		@participants = kata.avatars.count
@@ -30,18 +32,14 @@ class MetaKata
 		@amberlights = 0
 		@cycles = 0
 		@ends_green = false
-		@total_time = avatar.lights[avatar.lights.count - 1].time - kata.created
+		@total_time = 0 #avatar.lights[avatar.lights.count - 1].time - kata.created
 		@transitions = ""
 		@in_cycle = false
 		@cycle_lines = 0
 	end
 
 	def print
-		if @id.nil?
-			puts "..."
-		else
-			puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, code coverage num: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, transitions: #{@transitions}"
-		end
+		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, code coverage num: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, transitions: #{@transitions}"
 	end
 
 	def self.init_file(path)
@@ -55,10 +53,15 @@ class MetaKata
 
 	def save(path)
 		f = File.new(path, "a+")
-		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@animal},#{@path},#{@startdate},#{@seconds},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@endingreen},#{@transitions}")
+		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@animal},#{@path},#{@start_date},#{@total_time},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@ends_green},#{@transitions}")
 	end
 
 	def add_light(colour, line_count, time_diff)
+        #Time Ceiling
+        if time_diff > @TIME_CEILING
+        	time_diff += @TIME_CEILING
+        end
+        
 		case colour.to_s
 		when "red"
 			@redlights += 1
@@ -68,6 +71,10 @@ class MetaKata
 			@amberlights += 1
         end
         @transitions += "{" + colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
+
+        #Increment Total Time
+        @total_time += time_diff
+
 	end
 
 	def deleted_file(lines)
@@ -145,7 +152,7 @@ class MetaKata
 			if @in_cycle == true
 				if curr.colour.to_s == "green"
 					# End cycle
-			cycle_info = "<<" + @startcycle.to_s + ":" + curr.time.to_s + ":" + (curr.time - @startcycle.to_i).to_s + ":" + @cycle_lines.to_s + ">>]"
+					cycle_info = "<<" + @startcycle.to_s + ":" + curr.time.to_s + ":" + (curr.time - @startcycle.to_i).to_s + ":" + @cycle_lines.to_s + ">>]"
 	                @transitions +=  cycle_info
 	                @startcycle = curr.time
 	                @cycle_lines = 0
