@@ -42,11 +42,7 @@ class MetaKata
 	end
 
 	def save(path)
-		if File.exist?(path)
-			File.delete(path)
-		end
-		f = File.new(path, "w+")
-
+		f = File.new(path, "a+")
 		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@path},#{@startdate},#{@seconds},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@endingreen},#{@transitions}")
 	end
 
@@ -61,10 +57,6 @@ class MetaKata
         end
         @transitions += "{" + colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
 	end
-
-	def endCycle(endcycle)
-        return ";;" + @startcycle.to_s + ";;" + endcycle.to_s + ";;" + (endcycle - @startcycle.to_i).to_s + ";;" + @cycle_lines.to_s + "]"
-    end
 
 	def deleted_file(lines)
     	lines.all? { |line| line[:type] === :deleted }
@@ -141,7 +133,8 @@ class MetaKata
 			if @in_cycle == true
 				if curr.colour.to_s == "green"
 					# End cycle
-	                @transitions +=  endCycle(curr.time)
+					cycle_info = "<<" + @startcycle.to_s + ":" + curr.time.to_s + ":" + (curr.time - @startcycle.to_i).to_s + ":" + @cycle_lines.to_s + ">>]"
+	                @transitions +=  cycle_info
 	                @startcycle = curr.time
 	                @cycle_lines = 0
 	                @in_cycle = false
@@ -175,6 +168,6 @@ class MetaKata
     	end
     end
 
-    private :add_light, :calc_sloc, :endCycle, :new_file, :deleted_file
+    private :add_light, :new_file, :deleted_file
 
 end

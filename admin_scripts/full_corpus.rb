@@ -5,8 +5,10 @@ require File.dirname(__FILE__) + '/meta_kata'
 
 kata_limit = 25
 lang_limit = ["Java-1.8_JUnit", "Python-unittest"]
+save_file = Dir.pwd.to_s + "/test.csv"
 
 dojo = create_dojo
+all_kata = Array.new
 
 count = 0
 dojo.katas.each do |kata|
@@ -23,25 +25,29 @@ dojo.katas.each do |kata|
 			mk.name = kata.exercise.name
 			mk.path = avatar.path
 			mk.totallights = avatar.lights.count
+			mk.calc_sloc(avatar.path)
 			mk.parse(avatar)
 
-			mk.print
+			all_kata.push(mk)
+
+			if count % 5 == 0
+				print "."
+			end
+			
+			if count % 200 == 0
+				puts "[#{count}]"
+			end
 		end
 	end
 
 	break if count >= kata_limit
 end
+puts "[#{count}]"
 
+if File.exist?(save_file)
+	File.delete(save_file)
+end
 
-
-
-=begin
-mk.id = "234324"
-mk.name = "FizzBuzz"
-mk.language = "Java_1.8_-_JUnit"
-mk.addLight("red", 3, 32)
-mk.addLight("green", 9, 144)
-mk.print
-
-mk.save(Dir.pwd.to_s+"/test.csv")
-=end
+all_kata.each do |kata|
+	kata.save(save_file)
+end
