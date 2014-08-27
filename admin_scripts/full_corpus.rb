@@ -14,19 +14,14 @@ count = 0
 dojo.katas.each do |kata|
 	if kata.exercise.name.to_s != "Verbal" && lang_limit.include?(kata.language.name.to_s)
 		kata.avatars.active.each do |avatar|
+			
 			count += 1
-
-			mk = MetaKata.new
-			mk.id = kata.id
-			mk.language = kata.language.name
-			mk.participants = kata.avatars.count
-			mk.animal = avatar.name
-			mk.startdate = kata.created
-			mk.name = kata.exercise.name
-			mk.path = avatar.path
-			mk.totallights = avatar.lights.count
-			mk.calc_sloc(avatar.path)
-			mk.parse(avatar)
+			mk = MetaKata.new(kata, avatar)
+			#Functions
+			mk.calc_cycles
+			#mk.calc_sloc
+			#mk.coverage_metrics
+			mk.print
 
 			all_kata.push(mk)
 
@@ -37,6 +32,7 @@ dojo.katas.each do |kata|
 			if count % 200 == 0
 				puts "[#{count}]"
 			end
+
 		end
 	end
 

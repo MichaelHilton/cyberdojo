@@ -4,30 +4,33 @@ require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
 
 class MetaKata
-	attr_accessor :id, :language, :participants, :animal, :startdate, :name, :path, :totallights
-	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :endingreen, :seconds, :transitions
+	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time
 
-	def initialize(id = "0", language = "0", participants = "0", animal = "0", startdate = "0", name = "0", path = "0")
-		@id = id
-		@language = language
-		@participants = participants
-		@animal = animal
-		@startdate = startdate
-		@startcycle = startdate
-		@name = name
-		@path = path
+	def initialize(kata, avatar)
+		@kata = kata
+		@avatar = avatar
+		@path = avatar.path
+
+		@id = kata.id
+		@language = kata.language.name
+		@participants = kata.avatars.count
+		@animal = avatar.name
+		@start_date = kata.created
+		@start_cycle = start_date
+		@name = kata.exercise.name
+		@path = avatar.path
 		@sloc = 0
 		@edited_lines = 0
 		@ccnum = ""
 		@branchcov = ""
 		@statementcov = ""
-		@totallights = 0
+		@totallights = avatar.lights.count
 		@redlights = 0
 		@greenlights = 0
 		@amberlights = 0
 		@cycles = 0
-		@endingreen = false
-		@seconds = 0
+		@ends_green = false
+		@total_time = avatar.lights[avatar.lights.count - 1].time - kata.created
 		@transitions = ""
 		@in_cycle = false
 		@cycle_lines = 0
@@ -37,7 +40,7 @@ class MetaKata
 		if @id.nil?
 			puts "..."
 		else
-			puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, startdate: #{@startdate}, seconds in kata: #{@seconds}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, code coverage num: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@endingreen}, transitions: #{@transitions}"
+			puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, code coverage num: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, transitions: #{@transitions}"
 		end
 	end
 
@@ -75,14 +78,14 @@ class MetaKata
     	lines.all? { |line| line[:type] === :added }
 	end
 
-	def calc_sloc(path)
+	def calc_sloc
 		# Lines of Code (using sloccount)
-		allFiles =  Dir.entries(path.to_s + "sandbox")
+		allFiles =  Dir.entries(@path.to_s + "sandbox")
 		allFiles.each do |currFile|
 			isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.h$|\.hpp$/i
 			
 			unless isFile.nil?
-				file = path.to_s + "sandbox/" + currFile.to_s
+				file = @path.to_s + "sandbox/" + currFile.to_s
 				# the `shell command` does not capture error messages sent to stderr
         
 				command = `sloccount --details #{file}`
@@ -92,14 +95,14 @@ class MetaKata
 		end
 	end
 
-	def calc_lines(avatar, prev, curr)
+	def calc_lines(prev, curr)
 	    # determine number of lines changed between lights
 	    line_count = 0;
 
 	    if prev.nil?
-		    diff = avatar.tags[0].diff(curr.number)
+		    diff = @avatar.tags[0].diff(curr.number)
 		else
-			diff = avatar.tags[prev.number].diff(curr.number)
+			diff = @avatar.tags[prev.number].diff(curr.number)
 		end
 
 		diff.each do |filename,lines|
@@ -114,12 +117,11 @@ class MetaKata
 	    return line_count
 	end
 
-    def parse(avatar)
-    	calc_sloc(avatar.path)
+    def calc_cycles
     	prev = nil
 
-    	avatar.lights.each do |curr|
-    		line_count = calc_lines(avatar, prev, curr)
+    	@avatar.lights.each do |curr|
+    		line_count = calc_lines(prev, curr)
     		@cycle_lines += line_count
 			@edited_lines += line_count
 
@@ -130,11 +132,12 @@ class MetaKata
             		@in_cycle = true 
             	else
             		# Refactor cycle
+            		# TODO
             	end
             end
 
     		if prev.nil?
-    			add_light(curr.colour, line_count, (curr.time - @startdate))
+    			add_light(curr.colour, line_count, (curr.time - @start_date))
     		else
     			add_light(curr.colour, line_count, (curr.time - prev.time))
 			end
@@ -142,7 +145,7 @@ class MetaKata
 			if @in_cycle == true
 				if curr.colour.to_s == "green"
 					# End cycle
-					cycle_info = "<<" + @startcycle.to_s + ":" + curr.time.to_s + ":" + (curr.time - @startcycle.to_i).to_s + ":" + @cycle_lines.to_s + ">>]"
+			cycle_info = "<<" + @startcycle.to_s + ":" + curr.time.to_s + ":" + (curr.time - @startcycle.to_i).to_s + ":" + @cycle_lines.to_s + ">>]"
 	                @transitions +=  cycle_info
 	                @startcycle = curr.time
 	                @cycle_lines = 0
@@ -152,31 +155,38 @@ class MetaKata
             end
 
     		prev = curr
+    	end #End of For Each
+
+    	if @avatar.lights[@avatar.lights.count - 1].colour.to_s == "green"
+    		@ends_green = true
+    	else
+    		@ends_green = false
+    		@transitions += "NOT A CYCLE]"
     	end
     end
 
-    def coverage_metrics(path)
+    def coverage_metrics
     	case @language.to_s
     	when "Java-1.8_Unit"
-    		if File.exist?(path + 'CodeCoverageReport.csv')
-    			codeCoverageCSV = CSV.read(path + 'CodeCoverageReport.csv')
+    		if File.exist?(@path + 'CodeCoverageReport.csv')
+    			codeCoverageCSV = CSV.read(@path + 'CodeCoverageReport.csv')
                 branchCoverage =  codeCoverageCSV[2][6]
                 statementCoverage =  codeCoverageCSV[2][16]
     		end
-    		cyclomaticComplexity = `.javancss "#{path + "sandbox/*.java"}" 2>/dev/null`
+    		cyclomaticComplexity = `.javancss "#{@path + "sandbox/*.java"}" 2>/dev/null`
     		@ccnum = cyclomaticComplexity.scan(/\d/).join('')
     	when "Python-unittest"
     		if File.exist?(path + 'sandbox/pythonCodeCoverage.csv')
-	    		codeCoverageCSV = CSV.read(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
+	    		codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
 				#NOT SUPPORTED BY PYTHON LIBRARY
 	            #branchCoverage =  codeCoverageCSV[1][6]
 	            statementCoverage =  (codeCoverageCSV[1][3].to_f)/100
-	    		codeCoverageCSV = CSV.read(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
+	    		codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
 	            @ccnum = codeCoverageCSV[1][4]
         	end
     	end
     end
 
-    private :add_light, :new_file, :deleted_file
+    private :add_light, :new_file, :deleted_file, :calc_lines
 
 end
