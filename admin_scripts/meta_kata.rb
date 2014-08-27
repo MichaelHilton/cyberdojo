@@ -11,6 +11,8 @@ class MetaKata
 		@avatar = avatar
 		@path = avatar.path
 
+		@TIME_CEILING = 1200 # Time Ceiling in Seconds Per Light
+
 		@id = kata.id
 		@language = kata.language.name
 		@participants = kata.avatars.count
@@ -30,7 +32,7 @@ class MetaKata
 		@amberlights = 0
 		@cycles = 0
 		@ends_green = false
-		@total_time = avatar.lights[avatar.lights.count - 1].time - kata.created
+		@total_time = 0 #avatar.lights[avatar.lights.count - 1].time - kata.created
 		@transitions = ""
 		@in_cycle = false
 		@cycle_lines = 0
@@ -59,6 +61,11 @@ class MetaKata
 	end
 
 	def add_light(colour, line_count, time_diff)
+        #Time Ceiling
+        if time_diff > @TIME_CEILING
+        	time_diff += @TIME_CEILING
+        end
+        
 		case colour.to_s
 		when "red"
 			@redlights += 1
@@ -68,6 +75,10 @@ class MetaKata
 			@amberlights += 1
         end
         @transitions += "{" + colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
+
+        #Increment Total Time
+        @total_time += time_diff
+
 	end
 
 	def deleted_file(lines)
