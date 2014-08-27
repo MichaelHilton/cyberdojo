@@ -187,6 +187,6 @@ class MetaKata
     	end
     end
 
-    private :add_light, :endCycle, :new_file, :deleted_file, :calc_lines
+    private :add_light, :new_file, :deleted_file, :calc_lines
 
 end
