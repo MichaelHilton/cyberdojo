@@ -56,27 +56,6 @@ class MetaKata
 		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@animal},#{@path},#{@start_date},#{@total_time},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@ends_green},#{@transitions}")
 	end
 
-	def add_light(colour, line_count, time_diff)
-        #Time Ceiling
-        if time_diff > @TIME_CEILING
-        	time_diff = @TIME_CEILING
-        end
-        
-		case colour.to_s
-		when "red"
-			@redlights += 1
-		when "green"
-			@greenlights += 1
-		when "amber"
-			@amberlights += 1
-        end
-        @transitions += "{" + colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
-
-        #Increment Total Time
-        @total_time += time_diff
-
-	end
-
 	def deleted_file(lines)
     	lines.all? { |line| line[:type] === :deleted }
 	end
@@ -126,52 +105,113 @@ class MetaKata
 
     def calc_cycles
     	prev = nil
+        test_change = false
+        prod_change = false
+        cycle = ""
+        cycle_lights = Queue.new
 
-    	@avatar.lights.each do |curr|
-    		line_count = calc_lines(prev, curr)
-    		@cycle_lines += line_count
-			@edited_lines += line_count
+        @avatar.lights.each do |curr|
 
-			if @in_cycle == false
-            	if curr.colour.to_s == "red"
-            		# Begin Test Phase (Starts a TDD Cycle)
-            		@transitions += "["
-            		@in_cycle = true
-            		#TODO: End any refactor phase
-            	else
-            		# In Refactor Phase
-            		
-            	end
+            #Push light to queue
+            cycle_lights.push(curr)
+            
+            #Aquire file changes from light
+            if prev.nil?
+                diff = @avatar.tags[0].diff(curr.number)
+            else
+                diff = @avatar.tags[prev.number].diff(curr.number)
             end
 
-    		if prev.nil?
-    			add_light(curr.colour, line_count, (curr.time - @start_date))
-    		else
-    			add_light(curr.colour, line_count, (curr.time - prev.time))
-			end
+            #Check for changes to Test or Prod code
+            diff.each do |filename,content|
+                non_code_filenames = [ 'output', 'cyber-dojo.sh', 'instructions' ]
+                unless non_code_filenames.include?(filename)
+                    if lines.count { |line| line[:type] === :added } == 0 || lines.count { |line| line[:type] === :deleted } == 0
+                        if filename.include? "Test"
+                            test_change = true
+                        else
+                            prod_change = true
+                        end
+                    end
+                end
+            end #End of For Each
 
-			if @in_cycle == true
-				if curr.colour.to_s == "green"
-					# End Production Phase (Ends Test-Prod Cycle)
-					cycle_info = "<<" + @startcycle.to_s + "|" + curr.time.to_s + "|" + (curr.time - @startcycle.to_i).to_s + "|" + @cycle_lines.to_s + ">>]"
-	                @transitions +=  cycle_info
-	                @startcycle = curr.time
-	                @cycle_lines = 0
-	                @in_cycle = false
-	                @cycles += 1    
-                end  
-            end
+            #Green indicates end of cycle
+            if curr.colour.to_s == "green"
+                #Determine the type of cycle
+                if (test_change && !prod_change) || (!test_change && prod_change) || (!test_change && !prod_change)
+                    cycle = "R" #Refactor
+                else
+                    cycle = "TP" #Test-Prod
+                end
 
-    		prev = curr
-    	end #End of For Each
+                # Process Metrics & Output Data
+                if cycle = "TP"
+                    @transitions += "["
+                end
 
-    	#Check if Kata ends with a green light
-    	if @avatar.lights[@avatar.lights.count - 1].colour.to_s == "green"
-    		@ends_green = true
-    	else
-    		@ends_green = false
-    		@transitions += "NOT A CYCLE]"
-    	end
+                cycle_lights.each do |light|
+
+                    #Count Lines Modified in Light & Cycle
+                    line_count = calc_lines(prev, light) #Lines Modified in Light
+                    @cycle_lines += line_count #Total Lines Modified in Cycle
+                    @edited_lines += line_count #Total Lines Modified in Kata
+
+                    #Determine Time Spent in Light
+                    if prev.nil?
+                        time_diff = light.time - @start_date
+                    else
+                        time_diff = light.time - prev.time
+                    end
+
+                    #Time Ceiling
+                    if time_diff > @TIME_CEILING
+                        time_diff = @TIME_CEILING
+                    end
+
+                    #Increment Total Time
+                    @total_time += time_diff
+                    
+                    #Count Types of Lights
+                    case light.colour.to_s
+                    when "red"
+                        @redlights += 1
+                    when "green"
+                        @greenlights += 1
+                    when "amber"
+                        @amberlights += 1
+                    end                    
+
+                    if cycle == "TP"
+                        #Output Light
+                        @transitions += "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
+
+                    elsif cycle = "R"
+                        @transitions += "~" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
+                    end
+
+                    #Assign current to previous
+                    prev = light
+                end #End of For Each
+
+                #End Cycle Info
+                if cycle = "TP"
+                    cycle_info = "<<" + @startcycle.to_s + "|" + curr.time.to_s + "|" + (curr.time - @startcycle.to_i).to_s + "|" + @cycle_lines.to_s + ">>]"
+                    @transitions += cycle_info
+                    @startcycle = curr.time
+                    @cycle_lines = 0
+                    @cycles += 1
+                    
+            end #End of "If Green"
+        end #End of For Each
+
+        #Check if Kata ends with a green light
+        if @avatar.lights[@avatar.lights.count - 1].colour.to_s == "green"
+            @ends_green = true
+        else
+            @ends_green = false
+            @transitions += "NOT A CYCLE]"
+        end
     end
 
     def coverage_metrics
