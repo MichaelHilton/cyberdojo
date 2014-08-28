@@ -108,7 +108,7 @@ class MetaKata
         test_change = false
         prod_change = false
         cycle = ""
-        cycle_lights = Queue.new
+        cycle_lights = Array.new
 
         @avatar.lights.each do |curr|
 
@@ -126,7 +126,7 @@ class MetaKata
             diff.each do |filename,content|
                 non_code_filenames = [ 'output', 'cyber-dojo.sh', 'instructions' ]
                 unless non_code_filenames.include?(filename)
-                    if lines.count { |line| line[:type] === :added } == 0 || lines.count { |line| line[:type] === :deleted } == 0
+                    if content.count { |line| line[:type] === :added } == 0 || content.count { |line| line[:type] === :deleted } == 0
                         if filename.include? "Test"
                             test_change = true
                         else
@@ -140,17 +140,19 @@ class MetaKata
             if curr.colour.to_s == "green"
                 #Determine the type of cycle
                 if (test_change && !prod_change) || (!test_change && prod_change) || (!test_change && !prod_change)
-                    cycle = "R" #Refactor
+                    cycle = "R" #Refactor if changes are exclusive to another file
                 else
                     cycle = "TP" #Test-Prod
                 end
 
                 # Process Metrics & Output Data
-                if cycle = "TP"
+                if cycle == "TP"
                     @transitions += "["
                 end
 
                 cycle_lights.each do |light|
+                	#Remove Light from the Array
+                	cycle_lights.shift
 
                     #Count Lines Modified in Light & Cycle
                     line_count = calc_lines(prev, light) #Lines Modified in Light
@@ -182,11 +184,10 @@ class MetaKata
                         @amberlights += 1
                     end                    
 
+                    #Output
                     if cycle == "TP"
-                        #Output Light
                         @transitions += "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
-
-                    elsif cycle = "R"
+                    elsif cycle == "R"
                         @transitions += "~" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
                     end
 
@@ -195,12 +196,15 @@ class MetaKata
                 end #End of For Each
 
                 #End Cycle Info
-                if cycle = "TP"
+                if cycle == "TP"
                     cycle_info = "<<" + @startcycle.to_s + "|" + curr.time.to_s + "|" + (curr.time - @startcycle.to_i).to_s + "|" + @cycle_lines.to_s + ">>]"
                     @transitions += cycle_info
                     @startcycle = curr.time
                     @cycle_lines = 0
                     @cycles += 1
+                elsif cycle == "R"
+                	#Refactor
+                end
                     
             end #End of "If Green"
         end #End of For Each
@@ -236,6 +240,6 @@ class MetaKata
     	end
     end
 
-    private :add_light, :new_file, :deleted_file, :calc_lines
+    private :new_file, :deleted_file, :calc_lines
 
 end
