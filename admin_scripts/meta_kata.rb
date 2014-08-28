@@ -4,7 +4,7 @@ require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
 
 class MetaKata
-	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time
+	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines
 
 	def initialize(kata, avatar)
 		@kata = kata
@@ -32,14 +32,13 @@ class MetaKata
 		@amberlights = 0
 		@cycles = 0
 		@ends_green = false
-		@total_time = 0 #avatar.lights[avatar.lights.count - 1].time - kata.created
+		@total_time = 0
 		@transitions = ""
-		@in_cycle = false
 		@cycle_lines = 0
 	end
 
 	def print
-		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, code coverage num: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, transitions: #{@transitions}"
+		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, #{@transitions}"
 	end
 
 	def self.init_file(path)
@@ -107,10 +106,11 @@ class MetaKata
     	prev = nil
         test_change = false
         prod_change = false
+        in_cycle = false
         cycle = ""
         cycle_lights = Array.new
 
-        @avatar.lights.each do |curr|
+        @avatar.lights.each_with_index do |curr, index|
 
             #Push light to queue
             cycle_lights.push(curr)
@@ -126,7 +126,7 @@ class MetaKata
             diff.each do |filename,content|
                 non_code_filenames = [ 'output', 'cyber-dojo.sh', 'instructions' ]
                 unless non_code_filenames.include?(filename)
-                    if content.count { |line| line[:type] === :added } == 0 || content.count { |line| line[:type] === :deleted } == 0
+                    if content.count { |line| line[:type] === :added } > 0 || content.count { |line| line[:type] === :deleted } > 0
                         if filename.include? "Test"
                             test_change = true
                         else
@@ -136,23 +136,21 @@ class MetaKata
                 end
             end #End of For Each
 
-            #Green indicates end of cycle
-            if curr.colour.to_s == "green"
+            #Green indicates end of cycle, Also process if at last light
+            if curr.colour.to_s == "green" || index == @avatar.lights.count - 1
                 #Determine the type of cycle
                 if (test_change && !prod_change) || (!test_change && prod_change) || (!test_change && !prod_change)
-                    cycle = "R" #Refactor if changes are exclusive to another file
+                    cycle = "R" #Refactor if changes are exclusive to production or test files
                 else
-                    cycle = "TP" #Test-Prod
+                	if in_cycle == true
+                    	cycle = "TP" #Test-Prod
+                    else
+                    	cycle = "R"
+                    end
                 end
 
                 # Process Metrics & Output Data
-                if cycle == "TP"
-                    @transitions += "["
-                end
-
                 cycle_lights.each do |light|
-                	#Remove Light from the Array
-                	cycle_lights.shift
 
                     #Count Lines Modified in Light & Cycle
                     line_count = calc_lines(prev, light) #Lines Modified in Light
@@ -186,7 +184,7 @@ class MetaKata
 
                     #Output
                     if cycle == "TP"
-                        @transitions += "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
+                        @transitions += "+" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
                     elsif cycle == "R"
                         @transitions += "~" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
                     end
@@ -197,49 +195,59 @@ class MetaKata
 
                 #End Cycle Info
                 if cycle == "TP"
-                    cycle_info = "<<" + @startcycle.to_s + "|" + curr.time.to_s + "|" + (curr.time - @startcycle.to_i).to_s + "|" + @cycle_lines.to_s + ">>]"
-                    @transitions += cycle_info
-                    @startcycle = curr.time
+                    #cycle_info = "<<" + @start_cycle.to_s + "|" + curr.time.to_s + "|" + (curr.time - @start_cycle.to_i).to_s + "|" + @cycle_lines.to_s + ">>]"
+                    #@transitions += cycle_info
+                    @start_cycle = curr.time
                     @cycle_lines = 0
                     @cycles += 1
-                elsif cycle == "R"
+                #elsif cycle == "R"
                 	#Refactor
                 end
+
+                #Reset Cycle Metrics
+                test_change = false
+        		prod_change = false
+        		in_cycle = false
+        		cycle_lights.clear 
                     
+            elsif curr.colour.to_s == "red"
+            	in_cycle = true
             end #End of "If Green"
+
         end #End of For Each
 
-        #Check if Kata ends with a green light
         if @avatar.lights[@avatar.lights.count - 1].colour.to_s == "green"
             @ends_green = true
         else
             @ends_green = false
-            @transitions += "NOT A CYCLE]"
+            #@transitions += "NOT A CYCLE]"
         end
     end
 
-    def coverage_metrics
-    	case @language.to_s
-    	when "Java-1.8_Unit"
-    		if File.exist?(@path + 'CodeCoverageReport.csv')
-    			codeCoverageCSV = CSV.read(@path + 'CodeCoverageReport.csv')
-                branchCoverage =  codeCoverageCSV[2][6]
-                statementCoverage =  codeCoverageCSV[2][16]
-    		end
-    		cyclomaticComplexity = `.javancss "#{@path + "sandbox/*.java"}" 2>/dev/null`
-    		@ccnum = cyclomaticComplexity.scan(/\d/).join('')
-    	when "Python-unittest"
-    		if File.exist?(path + 'sandbox/pythonCodeCoverage.csv')
-	    		codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
+	def coverage_metrics
+		case @language.to_s
+		when "Java-1.8_JUnit"
+			if File.exist?(@path + 'CodeCoverageReport.csv')
+				codeCoverageCSV = CSV.read(@path + 'CodeCoverageReport.csv')
+				unless(codeCoverageCSV.inspect() == "[]")
+					@branchcov = codeCoverageCSV[2][6]
+					@statementcov = codeCoverageCSV[2][16]
+				end
+			end
+			cyclomaticComplexity = `./javancss "#{@path + "sandbox/*.java"}" 2>/dev/null`
+			@ccnum = cyclomaticComplexity.scan(/\d/).join('')
+		when "Python-unittest"
+			if File.exist?(path + 'sandbox/pythonCodeCoverage.csv')
+				codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
 				#NOT SUPPORTED BY PYTHON LIBRARY
-	            #branchCoverage =  codeCoverageCSV[1][6]
-	            statementCoverage =  (codeCoverageCSV[1][3].to_f)/100
-	    		codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
-	            @ccnum = codeCoverageCSV[1][4]
-        	end
-    	end
-    end
+				#branchCoverage = codeCoverageCSV[1][6]
+				@statementcov = (codeCoverageCSV[1][3].to_f)/100
+				codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
+				@ccnum = codeCoverageCSV[1][4]
+			end
+		end
+	end
 
-    private :new_file, :deleted_file, :calc_lines
+	private :new_file, :deleted_file, :calc_lines
 
 end
