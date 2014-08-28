@@ -4,7 +4,7 @@ require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
 
 class MetaKata
-	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time
+	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines
 
 	def initialize(kata, avatar)
 		@kata = kata
@@ -32,14 +32,13 @@ class MetaKata
 		@amberlights = 0
 		@cycles = 0
 		@ends_green = false
-		@total_time = 0 #avatar.lights[avatar.lights.count - 1].time - kata.created
+		@total_time = 0
 		@transitions = ""
-		@in_cycle = false
 		@cycle_lines = 0
 	end
 
 	def print
-		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, code coverage num: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, transitions: #{@transitions}"
+		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, #{@transitions}"
 	end
 
 	def self.init_file(path)
@@ -54,27 +53,6 @@ class MetaKata
 	def save(path)
 		f = File.new(path, "a+")
 		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@animal},#{@path},#{@start_date},#{@total_time},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@ends_green},#{@transitions}")
-	end
-
-	def add_light(colour, line_count, time_diff)
-        #Time Ceiling
-        if time_diff > @TIME_CEILING
-        	time_diff += @TIME_CEILING
-        end
-        
-		case colour.to_s
-		when "red"
-			@redlights += 1
-		when "green"
-			@greenlights += 1
-		when "amber"
-			@amberlights += 1
-        end
-        @transitions += "{" + colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
-
-        #Increment Total Time
-        @total_time += time_diff
-
 	end
 
 	def deleted_file(lines)
@@ -126,76 +104,150 @@ class MetaKata
 
     def calc_cycles
     	prev = nil
+        test_change = false
+        prod_change = false
+        in_cycle = false
+        cycle = ""
+        cycle_lights = Array.new
 
-    	@avatar.lights.each do |curr|
-    		line_count = calc_lines(prev, curr)
-    		@cycle_lines += line_count
-			@edited_lines += line_count
+        @avatar.lights.each_with_index do |curr, index|
 
-			if @in_cycle == false
-            	if curr.colour.to_s == "red"
-            		# Begin cycle
-            		@transitions += "["
-            		@in_cycle = true 
-            	else
-            		# Refactor cycle
-            		# TODO
-            	end
+            #Push light to queue
+            cycle_lights.push(curr)
+            
+            #Aquire file changes from light
+            if prev.nil?
+                diff = @avatar.tags[0].diff(curr.number)
+            else
+                diff = @avatar.tags[prev.number].diff(curr.number)
             end
 
-    		if prev.nil?
-    			add_light(curr.colour, line_count, (curr.time - @start_date))
-    		else
-    			add_light(curr.colour, line_count, (curr.time - prev.time))
-			end
-
-			if @in_cycle == true
-				if curr.colour.to_s == "green"
-					# End cycle
-					cycle_info = "<<" + @startcycle.to_s + ":" + curr.time.to_s + ":" + (curr.time - @startcycle.to_i).to_s + ":" + @cycle_lines.to_s + ">>]"
-	                @transitions +=  cycle_info
-	                @startcycle = curr.time
-	                @cycle_lines = 0
-	                @in_cycle = false
-	                @cycles += 1    
-                end  
-            end
-
-    		prev = curr
-    	end #End of For Each
-
-    	if @avatar.lights[@avatar.lights.count - 1].colour.to_s == "green"
-    		@ends_green = true
-    	else
-    		@ends_green = false
-    		@transitions += "NOT A CYCLE]"
-    	end
-    end
-
-    def coverage_metrics
-    	case @language.to_s
-        when "Java-1.8_JUnit"
-    		if File.exist?(@path + 'CodeCoverageReport.csv')
-                codeCoverageCSV = CSV.read(@path + 'CodeCoverageReport.csv')
-                unless(codeCoverageCSV.inspect() == "[]")
-                    @branchcov =  codeCoverageCSV[2][6]
-                    @statementcov =  codeCoverageCSV[2][16]
+            #Check for changes to Test or Prod code
+            diff.each do |filename,content|
+                non_code_filenames = [ 'output', 'cyber-dojo.sh', 'instructions' ]
+                unless non_code_filenames.include?(filename)
+                    if content.count { |line| line[:type] === :added } > 0 || content.count { |line| line[:type] === :deleted } > 0
+                        if filename.include? "Test"
+                            test_change = true
+                        else
+                            prod_change = true
+                        end
+                    end
                 end
-    		end
-    		cyclomaticComplexity = `./javancss "#{@path + "sandbox/*.java"}" 2>/dev/null`
-    		@ccnum = cyclomaticComplexity.scan(/\d/).join('')
-    	when "Python-unittest"
-    		if File.exist?(path + 'sandbox/pythonCodeCoverage.csv')
-	    		codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
-				#NOT SUPPORTED BY PYTHON LIBRARY
-	            #branchCoverage =  codeCoverageCSV[1][6]
-	            @statementcov =  (codeCoverageCSV[1][3].to_f)/100
-	    		codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
-	            @ccnum = codeCoverageCSV[1][4]
-        	end
-    	end
+            end #End of For Each
+
+            #Green indicates end of cycle, Also process if at last light
+            if curr.colour.to_s == "green" || index == @avatar.lights.count - 1
+                #Determine the type of cycle
+                if (test_change && !prod_change) || (!test_change && prod_change) || (!test_change && !prod_change)
+                    cycle = "R" #Refactor if changes are exclusive to production or test files
+                else
+                	if in_cycle == true
+                    	cycle = "TP" #Test-Prod
+                    else
+                    	cycle = "R"
+                    end
+                end
+
+                # Process Metrics & Output Data
+                cycle_lights.each do |light|
+
+                    #Count Lines Modified in Light & Cycle
+                    line_count = calc_lines(prev, light) #Lines Modified in Light
+                    @cycle_lines += line_count #Total Lines Modified in Cycle
+                    @edited_lines += line_count #Total Lines Modified in Kata
+
+                    #Determine Time Spent in Light
+                    if prev.nil?
+                        time_diff = light.time - @start_date
+                    else
+                        time_diff = light.time - prev.time
+                    end
+
+                    #Time Ceiling
+                    if time_diff > @TIME_CEILING
+                        time_diff = @TIME_CEILING
+                    end
+
+                    #Increment Total Time
+                    @total_time += time_diff
+                    
+                    #Count Types of Lights
+                    case light.colour.to_s
+                    when "red"
+                        @redlights += 1
+                    when "green"
+                        @greenlights += 1
+                    when "amber"
+                        @amberlights += 1
+                    end                    
+
+                    #Output
+                    if cycle == "TP"
+                        @transitions += "+" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
+                    elsif cycle == "R"
+                        @transitions += "~" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
+                    end
+
+                    #Assign current to previous
+                    prev = light
+                end #End of For Each
+
+                #End Cycle Info
+                if cycle == "TP"
+                    #cycle_info = "<<" + @start_cycle.to_s + "|" + curr.time.to_s + "|" + (curr.time - @start_cycle.to_i).to_s + "|" + @cycle_lines.to_s + ">>]"
+                    #@transitions += cycle_info
+                    @start_cycle = curr.time
+                    @cycle_lines = 0
+                    @cycles += 1
+                #elsif cycle == "R"
+                	#Refactor
+                end
+
+                #Reset Cycle Metrics
+                test_change = false
+        		prod_change = false
+        		in_cycle = false
+        		cycle_lights.clear 
+                    
+            elsif curr.colour.to_s == "red"
+            	in_cycle = true
+            end #End of "If Green"
+
+        end #End of For Each
+
+        if @avatar.lights[@avatar.lights.count - 1].colour.to_s == "green"
+            @ends_green = true
+        else
+            @ends_green = false
+            #@transitions += "NOT A CYCLE]"
+        end
     end
 
-    private :add_light, :new_file, :deleted_file, :calc_lines
+	def coverage_metrics
+		case @language.to_s
+		when "Java-1.8_JUnit"
+			if File.exist?(@path + 'CodeCoverageReport.csv')
+				codeCoverageCSV = CSV.read(@path + 'CodeCoverageReport.csv')
+				unless(codeCoverageCSV.inspect() == "[]")
+					@branchcov = codeCoverageCSV[2][6]
+					@statementcov = codeCoverageCSV[2][16]
+				end
+			end
+			cyclomaticComplexity = `./javancss "#{@path + "sandbox/*.java"}" 2>/dev/null`
+			@ccnum = cyclomaticComplexity.scan(/\d/).join('')
+		when "Python-unittest"
+			if File.exist?(path + 'sandbox/pythonCodeCoverage.csv')
+				codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
+				#NOT SUPPORTED BY PYTHON LIBRARY
+				#branchCoverage = codeCoverageCSV[1][6]
+				@statementcov = (codeCoverageCSV[1][3].to_f)/100
+				codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
+				@ccnum = codeCoverageCSV[1][4]
+			end
+		end
+	end
+
+	private :new_file, :deleted_file, :calc_lines
 
 end
