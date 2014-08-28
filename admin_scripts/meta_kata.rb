@@ -59,7 +59,7 @@ class MetaKata
 	def add_light(colour, line_count, time_diff)
         #Time Ceiling
         if time_diff > @TIME_CEILING
-        	time_diff += @TIME_CEILING
+        	time_diff = @TIME_CEILING
         end
         
 		case colour.to_s
@@ -134,12 +134,13 @@ class MetaKata
 
 			if @in_cycle == false
             	if curr.colour.to_s == "red"
-            		# Begin cycle
+            		# Begin Test Phase (Starts a TDD Cycle)
             		@transitions += "["
-            		@in_cycle = true 
+            		@in_cycle = true
+            		#TODO: End any refactor phase
             	else
-            		# Refactor cycle
-            		# TODO
+            		# In Refactor Phase
+            		
             	end
             end
 
@@ -151,8 +152,8 @@ class MetaKata
 
 			if @in_cycle == true
 				if curr.colour.to_s == "green"
-					# End cycle
-					cycle_info = "<<" + @startcycle.to_s + ":" + curr.time.to_s + ":" + (curr.time - @startcycle.to_i).to_s + ":" + @cycle_lines.to_s + ">>]"
+					# End Production Phase (Ends Test-Prod Cycle)
+					cycle_info = "<<" + @startcycle.to_s + "|" + curr.time.to_s + "|" + (curr.time - @startcycle.to_i).to_s + "|" + @cycle_lines.to_s + ">>]"
 	                @transitions +=  cycle_info
 	                @startcycle = curr.time
 	                @cycle_lines = 0
@@ -164,6 +165,7 @@ class MetaKata
     		prev = curr
     	end #End of For Each
 
+    	#Check if Kata ends with a green light
     	if @avatar.lights[@avatar.lights.count - 1].colour.to_s == "green"
     		@ends_green = true
     	else
