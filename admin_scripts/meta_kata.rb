@@ -174,20 +174,22 @@ class MetaKata
 
     def coverage_metrics
     	case @language.to_s
-    	when "Java-1.8_Unit"
+        when "Java-1.8_JUnit"
     		if File.exist?(@path + 'CodeCoverageReport.csv')
-    			codeCoverageCSV = CSV.read(@path + 'CodeCoverageReport.csv')
-                branchCoverage =  codeCoverageCSV[2][6]
-                statementCoverage =  codeCoverageCSV[2][16]
+                codeCoverageCSV = CSV.read(@path + 'CodeCoverageReport.csv')
+                unless(codeCoverageCSV.inspect() == "[]")
+                    @branchcov =  codeCoverageCSV[2][6]
+                    @statementcov =  codeCoverageCSV[2][16]
+                end
     		end
-    		cyclomaticComplexity = `.javancss "#{@path + "sandbox/*.java"}" 2>/dev/null`
+    		cyclomaticComplexity = `./javancss "#{@path + "sandbox/*.java"}" 2>/dev/null`
     		@ccnum = cyclomaticComplexity.scan(/\d/).join('')
     	when "Python-unittest"
     		if File.exist?(path + 'sandbox/pythonCodeCoverage.csv')
 	    		codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
 				#NOT SUPPORTED BY PYTHON LIBRARY
 	            #branchCoverage =  codeCoverageCSV[1][6]
-	            statementCoverage =  (codeCoverageCSV[1][3].to_f)/100
+	            @statementcov =  (codeCoverageCSV[1][3].to_f)/100
 	    		codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
 	            @ccnum = codeCoverageCSV[1][4]
         	end
