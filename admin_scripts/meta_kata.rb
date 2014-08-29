@@ -48,7 +48,7 @@ class MetaKata
 		end
 
 		f = File.new(path, "a+")
-		f.puts("KataID,Language,KataName,NumParticipants,Animal,Path,StartDate,secsInKata,TotalLights,RedLights,GreenLights,AmberLights,SLOC,EditedLines,TotalTests,CCNum,BranchCoverage,StatementCoverage,NumCycles,EndsInGreen,TransitionString")
+		f.puts("KataID,Language,KataName,NumParticipants,Animal,Path,StartDate,secsInKata,TotalLights,RedLights,GreenLights,AmberLights,SLOC,EditedLines,TotalTests,CCNum,BranchCoverage,StatementCoverage,NumCycles,EndsInGreen,LightData")
 	end
 
 	def save(path)
@@ -66,8 +66,7 @@ class MetaKata
 
 	def calc_sloc
 		# Lines of Code (using sloccount)
-		allFiles =  Dir.entries(@path.to_s + "sandbox")
-		allFiles.each do |currFile|
+		Dir.entries(@path.to_s + "sandbox").each do |currFile|
 			isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.h$|\.hpp$/i
 			
 			unless isFile.nil?
