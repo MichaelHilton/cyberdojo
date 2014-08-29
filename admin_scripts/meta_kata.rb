@@ -241,7 +241,7 @@ class MetaKata
 
                 #End Cycle Info
                 if cycle == "TP"
-                	@json_cycles += '],"total edits":' + cycle_edits.to_s + ',"total time":' + cycle_time.to_s + '}'
+                	@json_cycles += '],"totalEdits":' + cycle_edits.to_s + ',"totalTime":' + cycle_time.to_s + '}'
                     @start_cycle = curr.time
                     @cycle_lines = 0
                     @cycles += 1
