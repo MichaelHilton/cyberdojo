@@ -4,6 +4,7 @@ db/*.sqlite3
 tmp
 coverage
 katas_rb
+katas/*
 
 .DS_Store
 .sass-cache/

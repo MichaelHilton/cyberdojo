@@ -5,7 +5,7 @@ require File.dirname(__FILE__) + '/meta_kata'
 
 kata_limit = 25
 lang_limit = ["Java-1.8_JUnit", "Python-unittest"]
-save_file = Dir.pwd.to_s + "/test.csv"
+save_file = Dir.pwd.to_s + "/corpus.csv"
 
 MetaKata.init_file(save_file)
 
@@ -18,11 +18,13 @@ dojo.katas.each do |kata|
 			
 			count += 1
 			mk = MetaKata.new(kata, avatar)
+
 			#Functions
 			mk.calc_cycles
-			#mk.calc_sloc
-			#mk.coverage_metrics
-			mk.print
+			mk.calc_sloc
+			mk.coverage_metrics
+			mk.count_tests
+			#mk.print #for debugging
 
 			mk.save(save_file)
 
