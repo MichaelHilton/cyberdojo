@@ -28,17 +28,9 @@ dojo.katas.each do |kata|
 
 			mk.save(save_file)
 
-			if count % 5 == 0
-				print "."
-			end
-			
-			if count % 200 == 0
-				puts "[#{count}]"
-			end
-
+			print "\r " + dots(count)
 		end
 	end
-
 	break if count >= kata_limit
 end
-puts "[#{count}]"
+puts
