@@ -2,6 +2,7 @@
 
 require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
+#require 'json'
 
 class MetaKata
 	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines, :totaltests
@@ -35,11 +36,12 @@ class MetaKata
 		@ends_green = false
 		@total_time = 0
 		@transitions = ""
+		@json_cycles = ""
 		@cycle_lines = 0
 	end
 
 	def print
-		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, #{@transitions}"
+		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, light data: #{@transitions}, json cycles: #{@json_cycles}"
 	end
 
 	def self.init_file(path)
@@ -48,7 +50,7 @@ class MetaKata
 		end
 
 		f = File.new(path, "a+")
-		f.puts("KataID,Language,KataName,NumParticipants,Animal,Path,StartDate,secsInKata,TotalLights,RedLights,GreenLights,AmberLights,SLOC,EditedLines,TotalTests,CCNum,BranchCoverage,StatementCoverage,NumCycles,EndsInGreen,LightData")
+		f.puts("KataID,Language,KataName,NumParticipants,Animal,Path,StartDate,secsInKata,TotalLights,RedLights,GreenLights,AmberLights,SLOC,EditedLines,TotalTests,CCNum,BranchCoverage,StatementCoverage,NumCycles,EndsInGreen,LightData,JsonCycles")
 	end
 
 	def save(path)
@@ -60,7 +62,7 @@ class MetaKata
 		#END TEMP FIX
 
 		f = File.new(path, "a+")
-		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@animal},#{@path},#{@start_date},#{@total_time},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@totaltests},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@ends_green},#{@transitions}")
+		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@animal},#{@path},#{@start_date},#{@total_time},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@totaltests},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@ends_green},#{@transitions},#{@json_cycles}")
 	end
 
 	def deleted_file(lines)
@@ -73,7 +75,7 @@ class MetaKata
 
 	def calc_sloc
 		dataset = {}
-		command = `./cloc-1.62.pl --by-file --quiet --sum-one --csv  #{@avatar.path}sandbox/`
+		command = `./cloc-1.62.pl --by-file --quiet --sum-one --csv #{@avatar.path}sandbox/`
 		csv = CSV.parse(command)
 
 		unless(csv.inspect() == "[]")
@@ -130,6 +132,11 @@ class MetaKata
         in_cycle = false
         cycle = ""
         cycle_lights = Array.new
+        cycle_time = 0
+        cycle_edits = 0
+
+        #Start Json Array
+        @json_cycles += "["
 
         @avatar.lights.each_with_index do |curr, index|
 
@@ -170,13 +177,19 @@ class MetaKata
                     end
                 end
 
+                #Begin Json Cycle Light Data
+                if cycle == "TP"
+					@json_cycles += '{lights:['
+				end
+
                 # Process Metrics & Output Data
-                cycle_lights.each do |light|
+                cycle_lights.each_with_index do |light, light_index|
 
                     #Count Lines Modified in Light & Cycle
                     line_count = calc_lines(prev, light) #Lines Modified in Light
                     @cycle_lines += line_count #Total Lines Modified in Cycle
                     @edited_lines += line_count #Total Lines Modified in Kata
+                    cycle_edits += line_count
 
                     #Determine Time Spent in Light
                     if prev.nil?
@@ -187,11 +200,12 @@ class MetaKata
 
                     #Time Ceiling
                     if time_diff > @TIME_CEILING
-                        time_diff = @TIME_CEILING
+                        time_diff = 0
                     end
 
-                    #Increment Total Time
+                    #Increment Time
                     @total_time += time_diff
+                    cycle_time += time_diff
                     
                     #Count Types of Lights
                     case light.colour.to_s
@@ -205,6 +219,12 @@ class MetaKata
 
                     #Output
                     if cycle == "TP"
+                    	if light_index == 0
+                    		@json_cycles += '{color:"'
+                    	else
+                    		@json_cycles += ',{color:"'
+                    	end
+                    	@json_cycles += light.colour.to_s + '",edits:' + line_count.to_s + ',time:' + time_diff.to_s + '}'
                         @transitions += "+" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
                     elsif cycle == "R"
                         @transitions += "~" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
@@ -216,6 +236,7 @@ class MetaKata
 
                 #End Cycle Info
                 if cycle == "TP"
+                	@json_cycles += '],total edits:' + cycle_edits.to_s + ',total time:' + cycle_time.to_s + '}'
                     #cycle_info = "<<" + @start_cycle.to_s + "|" + curr.time.to_s + "|" + (curr.time - @start_cycle.to_i).to_s + "|" + @cycle_lines.to_s + ">>]"
                     #@transitions += cycle_info
                     @start_cycle = curr.time
@@ -229,6 +250,8 @@ class MetaKata
                 test_change = false
         		prod_change = false
         		in_cycle = false
+        		cycle_time = 0
+        		cycle_edits = 0
         		cycle_lights.clear 
                     
             elsif curr.colour.to_s == "red"
@@ -237,6 +260,11 @@ class MetaKata
 
         end #End of For Each
 
+        #End Json Array
+        @json_cycles += "]"
+        #@json_cycles = @json_cycles.to_json
+
+        #Determine if Kata Ends on Green
         if @avatar.lights[@avatar.lights.count - 1].colour.to_s == "green"
             @ends_green = true
         else
