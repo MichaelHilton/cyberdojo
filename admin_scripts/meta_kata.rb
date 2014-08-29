@@ -145,7 +145,7 @@ class MetaKata
                 non_code_filenames = [ 'output', 'cyber-dojo.sh', 'instructions' ]
                 unless non_code_filenames.include?(filename)
                     if content.count { |line| line[:type] === :added } > 0 || content.count { |line| line[:type] === :deleted } > 0
-                        if filename.include?"Test" || filename.include?"test"
+                        if (filename.include? "Test") || (filename.include? "test")
                             test_change = true
                         else
                             prod_change = true
