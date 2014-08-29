@@ -72,22 +72,12 @@ class MetaKata
 	end
 
 	def calc_sloc
-		#command = `./cloc-1.62.pl --by-file --quiet --sum-one --csv  #{avatar.path}sandbox/`
-		#	csv = CSV.parse(command)
+		dataset = {}
+		command = `./cloc-1.62.pl --by-file --quiet --sum-one --csv  #{@avatar.path}sandbox/`
+		csv = CSV.parse(command)
 
-
-		# Lines of Code (using sloccount)
-		Dir.entries(@path.to_s + "sandbox").each do |currFile|
-			isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.h$|\.hpp$/i
-			
-			unless isFile.nil?
-				file = @path.to_s + "sandbox/" + currFile.to_s
-				# the `shell command` does not capture error messages sent to stderr
-        
-				command = `sloccount --details #{file}`
-				value = command.split("\n").last
-				@sloc += value.split(" ").first.to_i
-			end
+		unless(csv.inspect() == "[]")
+			@sloc = @sloc + csv[2][4].to_i
 		end
 	end
 
