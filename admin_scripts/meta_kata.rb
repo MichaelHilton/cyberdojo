@@ -134,9 +134,10 @@ class MetaKata
         cycle_lights = Array.new
         cycle_time = 0
         cycle_edits = 0
+        first_cycle = true
 
         #Start Json Array
-        @json_cycles += "["
+        @json_cycles += '"['
 
         @avatar.lights.each_with_index do |curr, index|
 
@@ -179,7 +180,12 @@ class MetaKata
 
                 #Begin Json Cycle Light Data
                 if cycle == "TP"
-					@json_cycles += '{lights:['
+                	if first_cycle == true
+						@json_cycles += '{lights:['
+						first_cycle = false
+					else
+						@json_cycles += ',{lights:['
+					end
 				end
 
                 # Process Metrics & Output Data
@@ -261,7 +267,7 @@ class MetaKata
         end #End of For Each
 
         #End Json Array
-        @json_cycles += "]"
+        @json_cycles += ']"'
         #@json_cycles = @json_cycles.to_json
 
         #Determine if Kata Ends on Green
