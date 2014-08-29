@@ -37,7 +37,6 @@ class MetaKata
 		@total_time = 0
 		@transitions = ""
 		@json_cycles = ""
-		@cycle_lines = 0
 	end
 
 	def print
@@ -50,7 +49,7 @@ class MetaKata
 		end
 
 		f = File.new(path, "a+")
-		f.puts("KataID,Language,KataName,NumParticipants,Animal,Path,StartDate,secsInKata,TotalLights,RedLights,GreenLights,AmberLights,SLOC,EditedLines,TotalTests,CCNum,BranchCoverage,StatementCoverage,NumCycles,EndsInGreen,LightData,JsonCycles")
+		f.puts("KataID|Language|KataName|NumParticipants|Animal|Path|StartDate|secsInKata|TotalLights|RedLights|GreenLights|AmberLights|SLOC|EditedLines|TotalTests|CCNum|BranchCoverage|StatementCoverage|NumCycles|EndsInGreen|LightData|JsonCycles")
 	end
 
 	def save(path)
@@ -62,7 +61,7 @@ class MetaKata
 		#END TEMP FIX
 
 		f = File.new(path, "a+")
-		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@animal},#{@path},#{@start_date},#{@total_time},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@totaltests},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@ends_green},#{@transitions},#{@json_cycles}")
+		f.puts("#{@id}|#{@language}|#{@name}|#{@participants}|#{@animal}|#{@path}|#{@start_date}|#{@total_time}|#{@totallights}|#{@redlights}|#{@greenlights}|#{@amberlights}|#{@sloc}|#{@edited_lines}|#{@totaltests}|#{@ccnum}|#{@branchcov}|#{@statementcov}|#{@cycles}|#{@ends_green}|#{@transitions}|#{@json_cycles}")
 	end
 
 	def deleted_file(lines)
@@ -137,7 +136,7 @@ class MetaKata
         first_cycle = true
 
         #Start Json Array
-        @json_cycles += '"['
+        @json_cycles += '['
 
         @avatar.lights.each_with_index do |curr, index|
 
@@ -181,10 +180,10 @@ class MetaKata
                 #Begin Json Cycle Light Data
                 if cycle == "TP"
                 	if first_cycle == true
-						@json_cycles += '{lights:['
+						@json_cycles += '{"lights":['
 						first_cycle = false
 					else
-						@json_cycles += ',{lights:['
+						@json_cycles += ',{"lights":['
 					end
 				end
 
@@ -193,9 +192,9 @@ class MetaKata
 
                     #Count Lines Modified in Light & Cycle
                     line_count = calc_lines(prev, light) #Lines Modified in Light
-                    @cycle_lines += line_count #Total Lines Modified in Cycle
+                    cycle_edits += line_count #Total Lines Modified in Cycle
                     @edited_lines += line_count #Total Lines Modified in Kata
-                    cycle_edits += line_count
+
 
                     #Determine Time Spent in Light
                     if prev.nil?
@@ -226,11 +225,11 @@ class MetaKata
                     #Output
                     if cycle == "TP"
                     	if light_index == 0
-                    		@json_cycles += '{color:"'
+                    		@json_cycles += '{"color":"'
                     	else
-                    		@json_cycles += ',{color:"'
+                    		@json_cycles += ',{"color":"'
                     	end
-                    	@json_cycles += light.colour.to_s + '",edits:' + line_count.to_s + ',time:' + time_diff.to_s + '}'
+                    	@json_cycles += light.colour.to_s + '","edits":' + line_count.to_s + ',"time":' + time_diff.to_s + '}'
                         @transitions += "+" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
                     elsif cycle == "R"
                         @transitions += "~" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
@@ -242,9 +241,7 @@ class MetaKata
 
                 #End Cycle Info
                 if cycle == "TP"
-                	@json_cycles += '],total edits:' + cycle_edits.to_s + ',total time:' + cycle_time.to_s + '}'
-                    #cycle_info = "<<" + @start_cycle.to_s + "|" + curr.time.to_s + "|" + (curr.time - @start_cycle.to_i).to_s + "|" + @cycle_lines.to_s + ">>]"
-                    #@transitions += cycle_info
+                	@json_cycles += '],"total edits":' + cycle_edits.to_s + ',"total time":' + cycle_time.to_s + '}'
                     @start_cycle = curr.time
                     @cycle_lines = 0
                     @cycles += 1
@@ -267,7 +264,7 @@ class MetaKata
         end #End of For Each
 
         #End Json Array
-        @json_cycles += ']"'
+        @json_cycles += ']'
         #@json_cycles = @json_cycles.to_json
 
         #Determine if Kata Ends on Green
@@ -275,7 +272,6 @@ class MetaKata
             @ends_green = true
         else
             @ends_green = false
-            #@transitions += "NOT A CYCLE]"
         end
 
     end
