@@ -29,8 +29,10 @@ dojo.katas.each do |kata|
 			mk.save(save_file)
 
 			print "\r " + dots(count)
+
 		end
 	end
+
 	break if count >= kata_limit
 end
 puts
