@@ -52,6 +52,12 @@ class MetaKata
 	end
 
 	def save(path)
+		#TEMP FIX UNTIL OTHER LANG ARE SUPPORTED IN CYCLE LOGIC
+		unless @language.include?("Java-1.8_JUnit", "Python-unittest")
+			@cycles = "NA"
+		end
+		#END TEMP FIX
+
 		f = File.new(path, "a+")
 		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@animal},#{@path},#{@start_date},#{@total_time},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@totaltests},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@ends_green},#{@transitions}")
 	end
@@ -93,6 +99,8 @@ class MetaKata
 					if File.open(file).read.scan(/import unittest/).count > 0
 						@totaltests += File.open(file).read.scan(/def/).count
 					end
+				else
+					@totaltests = nil
 				end
 			end
 		end
@@ -145,7 +153,7 @@ class MetaKata
                 non_code_filenames = [ 'output', 'cyber-dojo.sh', 'instructions' ]
                 unless non_code_filenames.include?(filename)
                     if content.count { |line| line[:type] === :added } > 0 || content.count { |line| line[:type] === :deleted } > 0
-                        if filename.include? "Test"
+                        if (filename.include? "Test") || (filename.include? "test")
                             test_change = true
                         else
                             prod_change = true
