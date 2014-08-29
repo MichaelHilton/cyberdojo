@@ -4,7 +4,7 @@ require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
 
 class MetaKata
-	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines
+	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines, :totaltests
 
 	def initialize(kata, avatar)
 		@kata = kata
@@ -27,6 +27,7 @@ class MetaKata
 		@branchcov = ""
 		@statementcov = ""
 		@totallights = avatar.lights.count
+		@totaltests = 0
 		@redlights = 0
 		@greenlights = 0
 		@amberlights = 0
@@ -38,7 +39,7 @@ class MetaKata
 	end
 
 	def print
-		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, #{@transitions}"
+		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, #{@transitions}"
 	end
 
 	def self.init_file(path)
@@ -47,12 +48,12 @@ class MetaKata
 		end
 
 		f = File.new(path, "a+")
-		f.puts("KataID,Language,KataName,NumParticipants,Animal,Path,StartDate,secsInKata,TotalLights,RedLights,GreenLights,AmberLights,SLOC,EditedLines,CCNum,BranchCoverage,StatementCoverage,NumCycles,EndsInGreen,TransitionString")
+		f.puts("KataID,Language,KataName,NumParticipants,Animal,Path,StartDate,secsInKata,TotalLights,RedLights,GreenLights,AmberLights,SLOC,EditedLines,TotalTests,CCNum,BranchCoverage,StatementCoverage,NumCycles,EndsInGreen,TransitionString")
 	end
 
 	def save(path)
 		f = File.new(path, "a+")
-		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@animal},#{@path},#{@start_date},#{@total_time},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@ends_green},#{@transitions}")
+		f.puts("#{@id},#{@language},#{@name},#{@participants},#{@animal},#{@path},#{@start_date},#{@total_time},#{@totallights},#{@redlights},#{@greenlights},#{@amberlights},#{@sloc},#{@edited_lines},#{@totaltests},#{@ccnum},#{@branchcov},#{@statementcov},#{@cycles},#{@ends_green},#{@transitions}")
 	end
 
 	def deleted_file(lines)
@@ -76,6 +77,24 @@ class MetaKata
 				command = `sloccount --details #{file}`
 				value = command.split("\n").last
 				@sloc += value.split(" ").first.to_i
+			end
+		end
+	end
+
+	def count_tests
+		Dir.entries(@path.to_s + "sandbox").each do |currFile|
+			isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.h$|\.hpp$/i
+			
+			unless isFile.nil?
+				file = @path.to_s + "sandbox/" + currFile.to_s
+				case @language.to_s
+				when "Java-1.8_JUnit"
+					@totaltests += File.open(file).read.scan(/@Test/).count
+				when "Python-unittest"
+					if File.open(file).read.scan(/import unittest/).count > 0
+						@totaltests += File.open(file).read.scan(/def/).count
+					end
+				end
 			end
 		end
 	end
@@ -222,6 +241,7 @@ class MetaKata
             @ends_green = false
             #@transitions += "NOT A CYCLE]"
         end
+
     end
 
 	def coverage_metrics

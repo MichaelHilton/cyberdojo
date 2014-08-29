@@ -23,6 +23,7 @@ dojo.katas.each do |kata|
 			mk.calc_cycles
 			mk.calc_sloc
 			mk.coverage_metrics
+			mk.count_tests
 			#mk.print #for debugging
 
 			mk.save(save_file)
