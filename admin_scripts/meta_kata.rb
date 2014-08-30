@@ -40,7 +40,7 @@ class MetaKata
 
 	def print
 		#Set NA for Metrics not available
-		unless @supp_test_langs.include?@language then @totaltests = "NA" end
+		@totaltests = "NA" unless @supp_test_langs.include?@language
 		if @ccnum == "" then @ccnum = "NA" end
 		if @branchcov == "" then @branchcov = "NA" end
 		if @statementcov == "" then @statementcov = "NA" end
@@ -59,7 +59,7 @@ class MetaKata
 
 	def save(path)
 		#Set NA for Metrics not available
-		unless @supp_test_langs.include?@language then @totaltests = "NA" end		
+		@totaltests = "NA" unless @supp_test_langs.include?@language
 		if @ccnum == "" then @ccnum = "NA" end
 		if @branchcov == "" then @branchcov = "NA" end
 		if @statementcov == "" then @statementcov = "NA" end
