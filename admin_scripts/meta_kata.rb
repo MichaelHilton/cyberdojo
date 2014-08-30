@@ -12,6 +12,7 @@ class MetaKata
 		@path = avatar.path
 
 		@TIME_CEILING = 1200 # Time Ceiling in Seconds Per Light
+		@supp_test_langs = ["Java-1.8_JUnit", "Java-1.8_Mockito", "Java-1.8_Approval", "Java-1.8_Powermockito", "Python-unittest", "Python-pytest", "Ruby-TestUnit", "Ruby-Rspec", "C++-assert", "C++-GoogleTest", "C++-CppUTest", "C++-Catch", "C-assert", "Go-testing", "Javascript-assert", "C#-NUnit", "PHP-PHPUnit", "Perl-TestSimple", "CoffeeScript-jasmine", "Erlang-eunit", "Haskell-hunit", "Scala-scalatest", "Clojure-.test", "Groovy-JUnit", "Groovy-Spock"]
 
 		@id = kata.id
 		@language = kata.language.name
@@ -38,13 +39,8 @@ class MetaKata
 	end
 
 	def print
-		#Set NA for Metrics for languages not supported
-		#tests
-		supported_langs = ['Java-1.8_JUnit', 'Python-unittest', 'Ruby-TestUnit', 'C#-NUnit', 'Erlang-eunit', 'Haskell-hunit', 'C++-assert', 'C-assert', 'Go-testing', 'Javascript-assert', 'PHP-PHPUnit', 'Perl-TestSimple', 'CoffeeScript-jasmine', 'Scala-scalatest', 'Clojure-.test']
-		unless supported_langs.include?(@language)
-			@totaltests = "NA"
-		end
-		#coverage
+		#Set NA for Metrics not available
+		unless @supp_test_langs.include?@language then @totaltests = "NA" end
 		if @ccnum == "" then @ccnum = "NA" end
 		if @branchcov == "" then @branchcov = "NA" end
 		if @statementcov == "" then @statementcov = "NA" end
@@ -62,13 +58,8 @@ class MetaKata
 	end
 
 	def save(path)
-		#Set NA for Metrics for languages not supported
-		#tests
-		supported_langs = ['Java-1.8_JUnit', 'Python-unittest', 'Ruby-TestUnit', 'C#-NUnit', 'Erlang-eunit', 'Haskell-hunit', 'C++-assert', 'C-assert', 'Go-testing', 'Javascript-assert', 'PHP-PHPUnit', 'Perl-TestSimple', 'CoffeeScript-jasmine', 'Scala-scalatest', 'Clojure-.test']
-		unless supported_langs.include?(@language)
-			@totaltests = "NA"
-		end
-		#coverage
+		#Set NA for Metrics not available
+		unless @supp_test_langs.include?@language then @totaltests = "NA" end		
 		if @ccnum == "" then @ccnum = "NA" end
 		if @branchcov == "" then @branchcov = "NA" end
 		if @statementcov == "" then @statementcov = "NA" end
@@ -97,7 +88,7 @@ class MetaKata
 
 	def count_tests
 		Dir.entries(@path.to_s + "sandbox").each do |currFile|
-			isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.php$|\.rb$|\.hs$|\.clj$|\.go$|\.scala$|\.coffee$|\.cs$/i
+			isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.php$|\.rb$|\.hs$|\.clj$|\.go$|\.scala$|\.coffee$|\.cs$|\.groovy$\.erl$/i
 			
 			unless isFile.nil?
 				file = @path.to_s + "sandbox/" + currFile.to_s
@@ -106,18 +97,50 @@ class MetaKata
 					if File.open(file).read.scan(/junit/).count > 0					
 						@totaltests += File.open(file).read.scan(/@Test/).count
 					end
+				when "Java-1.8_Mockito"
+					if File.open(file).read.scan(/org\.mockito/).count > 0					
+						@totaltests += File.open(file).read.scan(/@Test/).count
+					end
+				when "Java-1.8_Powermockito"
+					if File.open(file).read.scan(/org\.powermock/).count > 0					
+						@totaltests += File.open(file).read.scan(/@Test/).count
+					end
+				when "Java-1.8_Approval"
+					if File.open(file).read.scan(/org\.approvaltests/).count > 0					
+						@totaltests += File.open(file).read.scan(/@Test/).count
+					end					
 				when "Python-unittest"
 					if File.open(file).read.scan(/unittest/).count > 0
 						@totaltests += File.open(file).read.scan(/def /).count
 					end
+				when "Python-pytest"
+					if file.include?"test"
+						@totaltests += File.open(file).read.scan(/def /).count
+					end					
 				when "Ruby-TestUnit"
 					if File.open(file).read.scan(/test\/unit/).count > 0
 						@totaltests += File.open(file).read.scan(/def /).count
+					end
+				when "Ruby-Rspec"
+					if File.open(file).read.scan(/describe/).count > 0
+						@totaltests += File.open(file).read.scan(/it /).count
 					end
 				when "C++-assert"
 					if File.open(file).read.scan(/cassert/).count > 0
 						@totaltests += File.open(file).read.scan(/static void /).count
 					end
+				when "C++-GoogleTest"
+					if File.open(file).read.scan(/gtest\.h/).count > 0
+						@totaltests += File.open(file).read.scan(/TEST\(/).count
+					end
+				when "C++-CppUTest"
+					if File.open(file).read.scan(/CppUTest/).count > 0
+						@totaltests += File.open(file).read.scan(/TEST\(/).count
+					end
+				when "C++-Catch"
+					if File.open(file).read.scan(/catch\.hpp/).count > 0
+						@totaltests += File.open(file).read.scan(/TEST_CASE\(/).count
+					end				
 				when "C-assert"
 					if File.open(file).read.scan(/assert\.h/).count > 0
 						@totaltests += File.open(file).read.scan(/static void /).count
@@ -161,9 +184,17 @@ class MetaKata
 				when "Clojure-.test"
 					if File.open(file).read.scan(/clojure\.test/).count > 0
 						@totaltests += File.open(file).read.scan(/deftest/).count
-					end				
+					end
+				when "Groovy-JUnit"
+					if File.open(file).read.scan(/org\.junit/).count > 0
+						@totaltests += File.open(file).read.scan(/@Test/).count
+					end
+				when "Groovy-Spock"
+					if File.open(file).read.scan(/spock\.lang/).count > 0
+						@totaltests += File.open(file).read.scan(/def /).count - 1 #1 extra because of object def
+					end
 				else
-					@totaltests = nil
+					@totaltests = "NA"
 				end
 			end
 		end
@@ -224,7 +255,7 @@ class MetaKata
                 unless non_code_filenames.include?(filename)
                     if content.count { |line| line[:type] === :added } > 0 || content.count { |line| line[:type] === :deleted } > 0
                     	#Check if file is a Test
-                        if (filename.include?"Test") || (filename.include?"test") || (filename.include?"Spec") || (filename.include?"spec") || (filename.include?".t")
+                        if (filename.include?"Test") || (filename.include?"test") || (filename.include?"Spec") || (filename.include?"spec") || (filename.include?".t") || (filename.include?"Step") || (filename.include?"step")
                             test_change = true
                         else
                             prod_change = true
