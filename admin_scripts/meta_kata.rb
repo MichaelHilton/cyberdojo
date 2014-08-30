@@ -12,13 +12,13 @@ class MetaKata
 		@path = avatar.path
 
 		@TIME_CEILING = 1200 # Time Ceiling in Seconds Per Light
+		@supp_test_langs = ["Java-1.8_JUnit", "Java-1.8_Mockito", "Java-1.8_Approval", "Java-1.8_Powermockito", "Python-unittest", "Python-pytest", "Ruby-TestUnit", "Ruby-Rspec", "C++-assert", "C++-GoogleTest", "C++-CppUTest", "C++-Catch", "C-assert", "Go-testing", "Javascript-assert", "C#-NUnit", "PHP-PHPUnit", "Perl-TestSimple", "CoffeeScript-jasmine", "Erlang-eunit", "Haskell-hunit", "Scala-scalatest", "Clojure-.test", "Groovy-JUnit", "Groovy-Spock"]
 
 		@id = kata.id
 		@language = kata.language.name
 		@participants = kata.avatars.count
 		@animal = avatar.name
 		@start_date = kata.created
-		@start_cycle = start_date
 		@name = kata.exercise.name
 		@path = avatar.path
 		@sloc = 0
@@ -39,13 +39,8 @@ class MetaKata
 	end
 
 	def print
-		#Set NA for Metrics for languages not supported
-		#tests
-		supported_langs = ['Java-1.8_JUnit', 'Python-unittest', 'Ruby-TestUnit', 'C#-NUnit', 'Erlang-eunit', 'Haskell-hunit', 'C++-assert', 'C-assert', 'Go-testing', 'Javascript-assert', 'PHP-PHPUnit', 'Perl-TestSimple', 'CoffeeScript-jasmine', 'Scala-scalatest', 'Clojure-.test']
-		unless supported_langs.include?(@language)
-			@totaltests = "NA"
-		end
-		#coverage
+		#Set NA for Metrics not available
+		unless @supp_test_langs.include?@language then @totaltests = "NA" end
 		if @ccnum == "" then @ccnum = "NA" end
 		if @branchcov == "" then @branchcov = "NA" end
 		if @statementcov == "" then @statementcov = "NA" end
@@ -63,13 +58,8 @@ class MetaKata
 	end
 
 	def save(path)
-		#Set NA for Metrics for languages not supported
-		#tests
-		supported_langs = ['Java-1.8_JUnit', 'Python-unittest', 'Ruby-TestUnit', 'C#-NUnit', 'Erlang-eunit', 'Haskell-hunit', 'C++-assert', 'C-assert', 'Go-testing', 'Javascript-assert', 'PHP-PHPUnit', 'Perl-TestSimple', 'CoffeeScript-jasmine', 'Scala-scalatest', 'Clojure-.test']
-		unless supported_langs.include?(@language)
-			@totaltests = "NA"
-		end
-		#coverage
+		#Set NA for Metrics not available
+		unless @supp_test_langs.include?@language then @totaltests = "NA" end		
 		if @ccnum == "" then @ccnum = "NA" end
 		if @branchcov == "" then @branchcov = "NA" end
 		if @statementcov == "" then @statementcov = "NA" end
@@ -98,7 +88,7 @@ class MetaKata
 
 	def count_tests
 		Dir.entries(@path.to_s + "sandbox").each do |currFile|
-			isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.php$|\.rb$|\.hs$|\.clj$|\.go$|\.scala$|\.coffee$|\.cs$/i
+			isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.php$|\.rb$|\.hs$|\.clj$|\.go$|\.scala$|\.coffee$|\.cs$|\.groovy$\.erl$/i
 			
 			unless isFile.nil?
 				file = @path.to_s + "sandbox/" + currFile.to_s
@@ -107,18 +97,50 @@ class MetaKata
 					if File.open(file).read.scan(/junit/).count > 0					
 						@totaltests += File.open(file).read.scan(/@Test/).count
 					end
+				when "Java-1.8_Mockito"
+					if File.open(file).read.scan(/org\.mockito/).count > 0					
+						@totaltests += File.open(file).read.scan(/@Test/).count
+					end
+				when "Java-1.8_Powermockito"
+					if File.open(file).read.scan(/org\.powermock/).count > 0					
+						@totaltests += File.open(file).read.scan(/@Test/).count
+					end
+				when "Java-1.8_Approval"
+					if File.open(file).read.scan(/org\.approvaltests/).count > 0					
+						@totaltests += File.open(file).read.scan(/@Test/).count
+					end					
 				when "Python-unittest"
 					if File.open(file).read.scan(/unittest/).count > 0
 						@totaltests += File.open(file).read.scan(/def /).count
 					end
+				when "Python-pytest"
+					if file.include?"test"
+						@totaltests += File.open(file).read.scan(/def /).count
+					end					
 				when "Ruby-TestUnit"
 					if File.open(file).read.scan(/test\/unit/).count > 0
 						@totaltests += File.open(file).read.scan(/def /).count
+					end
+				when "Ruby-Rspec"
+					if File.open(file).read.scan(/describe/).count > 0
+						@totaltests += File.open(file).read.scan(/it /).count
 					end
 				when "C++-assert"
 					if File.open(file).read.scan(/cassert/).count > 0
 						@totaltests += File.open(file).read.scan(/static void /).count
 					end
+				when "C++-GoogleTest"
+					if File.open(file).read.scan(/gtest\.h/).count > 0
+						@totaltests += File.open(file).read.scan(/TEST\(/).count
+					end
+				when "C++-CppUTest"
+					if File.open(file).read.scan(/CppUTest/).count > 0
+						@totaltests += File.open(file).read.scan(/TEST\(/).count
+					end
+				when "C++-Catch"
+					if File.open(file).read.scan(/catch\.hpp/).count > 0
+						@totaltests += File.open(file).read.scan(/TEST_CASE\(/).count
+					end				
 				when "C-assert"
 					if File.open(file).read.scan(/assert\.h/).count > 0
 						@totaltests += File.open(file).read.scan(/static void /).count
@@ -162,9 +184,17 @@ class MetaKata
 				when "Clojure-.test"
 					if File.open(file).read.scan(/clojure\.test/).count > 0
 						@totaltests += File.open(file).read.scan(/deftest/).count
-					end				
+					end
+				when "Groovy-JUnit"
+					if File.open(file).read.scan(/org\.junit/).count > 0
+						@totaltests += File.open(file).read.scan(/@Test/).count
+					end
+				when "Groovy-Spock"
+					if File.open(file).read.scan(/spock\.lang/).count > 0
+						@totaltests += File.open(file).read.scan(/def /).count - 1 #1 extra because of object def
+					end
 				else
-					@totaltests = nil
+					@totaltests = "NA"
 				end
 			end
 		end
@@ -174,7 +204,7 @@ class MetaKata
 	    # determine number of lines changed between lights
 	    line_count = 0;
 
-	    if prev.nil?
+	    if prev.nil? #If no previous light use the beginning
 		    diff = @avatar.tags[0].diff(curr.number)
 		else
 			diff = @avatar.tags[prev.number].diff(curr.number)
@@ -192,7 +222,8 @@ class MetaKata
 	end
 
     def calc_cycles
-    	prev_phase = nil
+    	prev_outer = nil
+    	prev_cycle_end = nil
         test_change = false
         prod_change = false
         in_cycle = false
@@ -211,11 +242,11 @@ class MetaKata
             cycle_lights.push(curr)
             
             #Aquire file changes from light
-            if prev_phase.nil?
+            if prev_outer.nil?
                 diff = @avatar.tags[0].diff(curr.number)
                 test_change = true
             else
-                diff = @avatar.tags[prev_phase.number].diff(curr.number)
+                diff = @avatar.tags[prev_outer.number].diff(curr.number)
             end
 
             #Check for changes to Test or Prod code
@@ -224,17 +255,18 @@ class MetaKata
                 unless non_code_filenames.include?(filename)
                     if content.count { |line| line[:type] === :added } > 0 || content.count { |line| line[:type] === :deleted } > 0
                     	#Check if file is a Test
-                        if (filename.include?"Test") || (filename.include?"test") || (filename.include?"Spec") || (filename.include?"spec") || (filename.include?".t")
+                        if (filename.include?"Test") || (filename.include?"test") || (filename.include?"Spec") || (filename.include?"spec") || (filename.include?".t") || (filename.include?"Step") || (filename.include?"step")
                             test_change = true
                         else
                             prod_change = true
                         end
                     end
                 end
-            end #End of For Each
+            end #End of Diff For Each
 
-            #Green indicates end of cycle, Also process if at last light
+            #Green indicates end of cycle, also process if at last light
             if curr.colour.to_s == "green" || index == @avatar.lights.count - 1
+
                 #Determine the type of cycle
                 if (test_change && !prod_change) || (!test_change && prod_change) || (!test_change && !prod_change)
                     cycle = "R" #Refactor if changes are exclusive to production or test files
@@ -260,17 +292,25 @@ class MetaKata
                 # Process Metrics & Output Data
                 cycle_lights.each_with_index do |light, light_index|
 
-                    #Count Lines Modified in Light & Cycle
-                    line_count = calc_lines(prev, light) #Lines Modified in Light
+                    #Count Lines Modified in Light, Cycle & Kata
+                    #Lines Modified in Light
+                    if prev.nil? #If no previous light in this cycle use the last cycle's end
+                    	line_count = calc_lines(prev_cycle_end, light)
+                    else
+                    	line_count = calc_lines(prev, light)
+                    end
                     cycle_edits += line_count #Total Lines Modified in Cycle
                     @edited_lines += line_count #Total Lines Modified in Kata
 
-
                     #Determine Time Spent in Light
-                    if prev.nil?
+                    if prev_cycle_end.nil? && prev.nil? #If the first light of the Kata
                         time_diff = light.time - @start_date
                     else
-                        time_diff = light.time - prev.time
+                    	if prev.nil? #If the first light of the Cycle
+                    		time_diff = light.time - prev_cycle_end.time
+                    	else
+                        	time_diff = light.time - prev.time
+                        end
                     end
 
                     #Drop Time if it hits the Time Ceiling
@@ -312,8 +352,6 @@ class MetaKata
                 #If this was a TPP Cycle then process it accordingly
                 if cycle == "TP"
                 	@json_cycles += '],"totalEdits":' + cycle_edits.to_s + ',"totalTime":' + cycle_time.to_s + '}'
-                    @start_cycle = curr.time
-                    @cycle_lines = 0
                     @cycles += 1
                 #elsif cycle == "R"
                 	#Refactor
@@ -325,13 +363,15 @@ class MetaKata
         		in_cycle = false
         		cycle_time = 0
         		cycle_edits = 0
-        		cycle_lights.clear 
+        		cycle_lights.clear
+
+        		prev_cycle_end = curr
                     
             elsif curr.colour.to_s == "red"
             	in_cycle = true
             end #End of "If Green"
 
-            prev_phase = curr
+            prev_outer = curr
 
         end #End of For Each
 
