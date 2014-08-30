@@ -40,6 +40,19 @@ class MetaKata
 	end
 
 	def print
+		#Set NA for Metrics for languages not supported
+		#cycles
+		supported_langs = ['Java-1.8_JUnit', 'Python-unittest', 'Ruby-TestUnit', 'C#-NUnit', 'Erlang-eunit', 'Haskell-hunit', 'C++-assert', 'C-assert', 'Go-testing', 'Javascript-assert', 'PHP-PHPUnit', 'Perl-TestSimple', 'CoffeeScript-jasmine', 'Scala-scalatest', 'Clojure-.test']
+		unless supported_langs.include?(@language)
+			@cycles = "NA"
+			@totaltests = "NA"
+		end
+
+		#coverage
+		if @ccnum == "" then @ccnum = "NA" end
+		if @branchcov == "" then @branchcov = "NA" end
+		if @statementcov == "" then @statementcov = "NA" end
+
 		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, light data: #{@transitions}, json cycles: #{@json_cycles}"
 	end
 
@@ -53,12 +66,18 @@ class MetaKata
 	end
 
 	def save(path)
-		#TEMP FIX UNTIL OTHER LANG ARE SUPPORTED IN CYCLE LOGIC
-		supported_langs = ['Java-1.8_JUnit', 'Python-unittest']
+		#Set NA for Metrics for languages not supported
+		#cycles
+		supported_langs = ['Java-1.8_JUnit', 'Python-unittest', 'Ruby-TestUnit', 'C#-NUnit', 'Erlang-eunit', 'Haskell-hunit', 'C++-assert', 'C-assert', 'Go-testing', 'Javascript-assert', 'PHP-PHPUnit', 'Perl-TestSimple', 'CoffeeScript-jasmine', 'Scala-scalatest', 'Clojure-.test']
 		unless supported_langs.include?(@language)
 			@cycles = "NA"
+			@totaltests = "NA"
 		end
-		#END TEMP FIX
+
+		#coverage
+		if @ccnum == "" then @ccnum = "NA" end
+		if @branchcov == "" then @branchcov = "NA" end
+		if @statementcov == "" then @statementcov = "NA" end
 
 		f = File.new(path, "a+")
 		f.puts("#{@id}|#{@language}|#{@name}|#{@participants}|#{@animal}|#{@path}|#{@start_date}|#{@total_time}|#{@totallights}|#{@redlights}|#{@greenlights}|#{@amberlights}|#{@sloc}|#{@edited_lines}|#{@totaltests}|#{@ccnum}|#{@branchcov}|#{@statementcov}|#{@cycles}|#{@ends_green}|#{@transitions}|#{@json_cycles}")
@@ -74,7 +93,7 @@ class MetaKata
 
 	def calc_sloc
 		dataset = {}
-		command = `./cloc-1.62.pl --by-file --quiet --sum-one --csv #{@avatar.path}sandbox/`
+		command = `./cloc-1.62.pl --by-file --quiet --sum-one --exclude-list-file=./clocignore --csv #{@avatar.path}sandbox/`
 		csv = CSV.parse(command)
 
 		unless(csv.inspect() == "[]")
@@ -84,17 +103,71 @@ class MetaKata
 
 	def count_tests
 		Dir.entries(@path.to_s + "sandbox").each do |currFile|
-			isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.h$|\.hpp$/i
+			isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.php$|\.rb$|\.hs$|\.clj$|\.go$|\.scala$|\.coffee$|\.cs$/i
 			
 			unless isFile.nil?
 				file = @path.to_s + "sandbox/" + currFile.to_s
 				case @language.to_s
 				when "Java-1.8_JUnit"
-					@totaltests += File.open(file).read.scan(/@Test/).count
-				when "Python-unittest"
-					if File.open(file).read.scan(/import unittest/).count > 0
-						@totaltests += File.open(file).read.scan(/def/).count
+					if File.open(file).read.scan(/junit/).count > 0					
+						@totaltests += File.open(file).read.scan(/@Test/).count
 					end
+				when "Python-unittest"
+					if File.open(file).read.scan(/unittest/).count > 0
+						@totaltests += File.open(file).read.scan(/def /).count
+					end
+				when "Ruby-TestUnit"
+					if File.open(file).read.scan(/test\/unit/).count > 0
+						@totaltests += File.open(file).read.scan(/def /).count
+					end
+				when "C++-assert"
+					if File.open(file).read.scan(/cassert/).count > 0
+						@totaltests += File.open(file).read.scan(/static void /).count
+					end
+				when "C-assert"
+					if File.open(file).read.scan(/assert\.h/).count > 0
+						@totaltests += File.open(file).read.scan(/static void /).count
+					end								
+				when "Go-testing"
+					if File.open(file).read.scan(/testing/).count > 0
+						@totaltests += File.open(file).read.scan(/func /).count
+					end
+				when "Javascript-assert"
+					if File.open(file).read.scan(/assert/).count > 0
+						@totaltests += File.open(file).read.scan(/assert/).count - 2 #2 extra because of library include line
+					end					
+				when "C#-NUnit"
+					if File.open(file).read.scan(/NUnit\.Framework/).count > 0
+						@totaltests += File.open(file).read.scan(/\[Test\]/).count
+					end
+				when "PHP-PHPUnit"
+					if File.open(file).read.scan(/PHPUnit_Framework_TestCase/).count > 0
+						@totaltests += File.open(file).read.scan(/function /).count
+					end
+				when "Perl-TestSimple"
+					if File.open(file).read.scan(/use Test/).count > 0
+						@totaltests += File.open(file).read.scan(/is/).count
+					end
+				when "CoffeeScript-jasmine"
+					if File.open(file).read.scan(/jasmine-node/).count > 0
+						@totaltests += File.open(file).read.scan(/it/).count
+					end
+				when "Erlang-eunit"
+					if File.open(file).read.scan(/eunit\.hrl/).count > 0
+						@totaltests += File.open(file).read.scan(/test\(\)/).count
+					end
+				when "Haskell-hunit"
+					if File.open(file).read.scan(/Test\.HUnit/).count > 0
+						@totaltests += File.open(file).read.scan(/TestCase/).count
+					end
+				when "Scala-scalatest"
+					if File.open(file).read.scan(/org\.scalatest/).count > 0
+						@totaltests += File.open(file).read.scan(/test\(/).count
+					end
+				when "Clojure-.test"
+					if File.open(file).read.scan(/clojure\.test/).count > 0
+						@totaltests += File.open(file).read.scan(/deftest/).count
+					end				
 				else
 					@totaltests = nil
 				end
@@ -155,7 +228,7 @@ class MetaKata
                 non_code_filenames = [ 'output', 'cyber-dojo.sh', 'instructions' ]
                 unless non_code_filenames.include?(filename)
                     if content.count { |line| line[:type] === :added } > 0 || content.count { |line| line[:type] === :deleted } > 0
-                        if (filename.include? "Test") || (filename.include? "test")
+                        if (filename.include?"Test") || (filename.include?"test") || (filename.include?"Spec") || (filename.include?"spec") || (filename.include?".t")
                             test_change = true
                         else
                             prod_change = true
