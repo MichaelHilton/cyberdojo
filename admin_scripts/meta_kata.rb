@@ -2,7 +2,6 @@
 
 require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
-#require 'json'
 
 class MetaKata
 	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines, :totaltests
@@ -41,13 +40,11 @@ class MetaKata
 
 	def print
 		#Set NA for Metrics for languages not supported
-		#cycles
+		#tests
 		supported_langs = ['Java-1.8_JUnit', 'Python-unittest', 'Ruby-TestUnit', 'C#-NUnit', 'Erlang-eunit', 'Haskell-hunit', 'C++-assert', 'C-assert', 'Go-testing', 'Javascript-assert', 'PHP-PHPUnit', 'Perl-TestSimple', 'CoffeeScript-jasmine', 'Scala-scalatest', 'Clojure-.test']
 		unless supported_langs.include?(@language)
-			@cycles = "NA"
 			@totaltests = "NA"
 		end
-
 		#coverage
 		if @ccnum == "" then @ccnum = "NA" end
 		if @branchcov == "" then @branchcov = "NA" end
@@ -67,13 +64,11 @@ class MetaKata
 
 	def save(path)
 		#Set NA for Metrics for languages not supported
-		#cycles
+		#tests
 		supported_langs = ['Java-1.8_JUnit', 'Python-unittest', 'Ruby-TestUnit', 'C#-NUnit', 'Erlang-eunit', 'Haskell-hunit', 'C++-assert', 'C-assert', 'Go-testing', 'Javascript-assert', 'PHP-PHPUnit', 'Perl-TestSimple', 'CoffeeScript-jasmine', 'Scala-scalatest', 'Clojure-.test']
 		unless supported_langs.include?(@language)
-			@cycles = "NA"
 			@totaltests = "NA"
 		end
-
 		#coverage
 		if @ccnum == "" then @ccnum = "NA" end
 		if @branchcov == "" then @branchcov = "NA" end
@@ -190,7 +185,6 @@ class MetaKata
 		    if !non_code_filenames.include?(filename) && !deleted_file(lines) && !new_file(lines)
 		        line_count += lines.count { |line| line[:type] === :added }
 		        line_count += lines.count { |line| line[:type] === :deleted }
-		        #TODO: ADD A FILES CHANGED PER CYCLE COUNTER
 		    end
 		end
 
@@ -198,7 +192,7 @@ class MetaKata
 	end
 
     def calc_cycles
-    	prev = nil
+    	prev_phase = nil
         test_change = false
         prod_change = false
         in_cycle = false
@@ -217,10 +211,11 @@ class MetaKata
             cycle_lights.push(curr)
             
             #Aquire file changes from light
-            if prev.nil?
+            if prev_phase.nil?
                 diff = @avatar.tags[0].diff(curr.number)
+                test_change = true
             else
-                diff = @avatar.tags[prev.number].diff(curr.number)
+                diff = @avatar.tags[prev_phase.number].diff(curr.number)
             end
 
             #Check for changes to Test or Prod code
@@ -228,6 +223,7 @@ class MetaKata
                 non_code_filenames = [ 'output', 'cyber-dojo.sh', 'instructions' ]
                 unless non_code_filenames.include?(filename)
                     if content.count { |line| line[:type] === :added } > 0 || content.count { |line| line[:type] === :deleted } > 0
+                    	#Check if file is a Test
                         if (filename.include?"Test") || (filename.include?"test") || (filename.include?"Spec") || (filename.include?"spec") || (filename.include?".t")
                             test_change = true
                         else
@@ -243,7 +239,7 @@ class MetaKata
                 if (test_change && !prod_change) || (!test_change && prod_change) || (!test_change && !prod_change)
                     cycle = "R" #Refactor if changes are exclusive to production or test files
                 else
-                	if in_cycle == true
+                	if in_cycle == true && curr.colour.to_s == "green"
                     	cycle = "TP" #Test-Prod
                     else
                     	cycle = "R"
@@ -260,6 +256,7 @@ class MetaKata
 					end
 				end
 
+				prev = nil
                 # Process Metrics & Output Data
                 cycle_lights.each_with_index do |light, light_index|
 
@@ -276,7 +273,7 @@ class MetaKata
                         time_diff = light.time - prev.time
                     end
 
-                    #Time Ceiling
+                    #Drop Time if it hits the Time Ceiling
                     if time_diff > @TIME_CEILING
                         time_diff = 0
                     end
@@ -296,7 +293,7 @@ class MetaKata
                     end                    
 
                     #Output
-                    if cycle == "TP"
+                    if (cycle == "TP")
                     	if light_index == 0
                     		@json_cycles += '{"color":"'
                     	else
@@ -308,11 +305,11 @@ class MetaKata
                         @transitions += "~" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
                     end
 
-                    #Assign current to previous
+                    #Assign current light to previous
                     prev = light
                 end #End of For Each
 
-                #End Cycle Info
+                #If this was a TPP Cycle then process it accordingly
                 if cycle == "TP"
                 	@json_cycles += '],"totalEdits":' + cycle_edits.to_s + ',"totalTime":' + cycle_time.to_s + '}'
                     @start_cycle = curr.time
@@ -334,11 +331,12 @@ class MetaKata
             	in_cycle = true
             end #End of "If Green"
 
+            prev_phase = curr
+
         end #End of For Each
 
         #End Json Array
         @json_cycles += ']'
-        #@json_cycles = @json_cycles.to_json
 
         #Determine if Kata Ends on Green
         if @avatar.lights[@avatar.lights.count - 1].colour.to_s == "green"
