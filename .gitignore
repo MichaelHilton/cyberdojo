@@ -6,6 +6,8 @@ coverage
 katas_rb
 katas/*
 
+
+
 .DS_Store
 .sass-cache/
 
@@ -43,6 +45,7 @@ admin_scripts/calcCodeCovg/src/Anagrammer.java
 admin_scripts/calcCodeCovg/src/AnagrammerTest.java
 admin_scripts/calcCodeCovg/tempDir/Hiker.java
 admin_scripts/calcCodeCovg/tempDir/HikerTest.java
+admin_scripts/figleaf_bin/_lib.pyc
 admin_scripts/figleaf_bin/html/_System_Library_Frameworks_Python.framework_Versions_2.7_lib_python2.7_collections.py.html
 admin_scripts/figleaf_bin/html/_System_Library_Frameworks_Python.framework_Versions_2.7_lib_python2.7_difflib.py.html
 admin_scripts/figleaf_bin/html/_System_Library_Frameworks_Python.framework_Versions_2.7_lib_python2.7_fnmatch.py.html
