@@ -18,7 +18,6 @@ class MetaKata
 		@participants = kata.avatars.count
 		@animal = avatar.name
 		@start_date = kata.created
-		@start_cycle = start_date
 		@name = kata.exercise.name
 		@path = avatar.path
 		@sloc = 0
@@ -174,7 +173,7 @@ class MetaKata
 	    # determine number of lines changed between lights
 	    line_count = 0;
 
-	    if prev.nil?
+	    if prev.nil? #If no previous light use the beginning
 		    diff = @avatar.tags[0].diff(curr.number)
 		else
 			diff = @avatar.tags[prev.number].diff(curr.number)
@@ -192,7 +191,8 @@ class MetaKata
 	end
 
     def calc_cycles
-    	prev_phase = nil
+    	prev_outer = nil
+    	prev_cycle_end = nil
         test_change = false
         prod_change = false
         in_cycle = false
@@ -211,11 +211,11 @@ class MetaKata
             cycle_lights.push(curr)
             
             #Aquire file changes from light
-            if prev_phase.nil?
+            if prev_outer.nil?
                 diff = @avatar.tags[0].diff(curr.number)
                 test_change = true
             else
-                diff = @avatar.tags[prev_phase.number].diff(curr.number)
+                diff = @avatar.tags[prev_outer.number].diff(curr.number)
             end
 
             #Check for changes to Test or Prod code
@@ -231,10 +231,11 @@ class MetaKata
                         end
                     end
                 end
-            end #End of For Each
+            end #End of Diff For Each
 
-            #Green indicates end of cycle, Also process if at last light
+            #Green indicates end of cycle, also process if at last light
             if curr.colour.to_s == "green" || index == @avatar.lights.count - 1
+
                 #Determine the type of cycle
                 if (test_change && !prod_change) || (!test_change && prod_change) || (!test_change && !prod_change)
                     cycle = "R" #Refactor if changes are exclusive to production or test files
@@ -260,17 +261,25 @@ class MetaKata
                 # Process Metrics & Output Data
                 cycle_lights.each_with_index do |light, light_index|
 
-                    #Count Lines Modified in Light & Cycle
-                    line_count = calc_lines(prev, light) #Lines Modified in Light
+                    #Count Lines Modified in Light, Cycle & Kata
+                    #Lines Modified in Light
+                    if prev.nil? #If no previous light in this cycle use the last cycle's end
+                    	line_count = calc_lines(prev_cycle_end, light)
+                    else
+                    	line_count = calc_lines(prev, light)
+                    end
                     cycle_edits += line_count #Total Lines Modified in Cycle
                     @edited_lines += line_count #Total Lines Modified in Kata
 
-
                     #Determine Time Spent in Light
-                    if prev.nil?
+                    if prev_cycle_end.nil? && prev.nil? #If the first light of the Kata
                         time_diff = light.time - @start_date
                     else
-                        time_diff = light.time - prev.time
+                    	if prev.nil? #If the first light of the Cycle
+                    		time_diff = light.time - prev_cycle_end.time
+                    	else
+                        	time_diff = light.time - prev.time
+                        end
                     end
 
                     #Drop Time if it hits the Time Ceiling
@@ -312,8 +321,6 @@ class MetaKata
                 #If this was a TPP Cycle then process it accordingly
                 if cycle == "TP"
                 	@json_cycles += '],"totalEdits":' + cycle_edits.to_s + ',"totalTime":' + cycle_time.to_s + '}'
-                    @start_cycle = curr.time
-                    @cycle_lines = 0
                     @cycles += 1
                 #elsif cycle == "R"
                 	#Refactor
@@ -325,13 +332,15 @@ class MetaKata
         		in_cycle = false
         		cycle_time = 0
         		cycle_edits = 0
-        		cycle_lights.clear 
+        		cycle_lights.clear
+
+        		prev_cycle_end = curr
                     
             elsif curr.colour.to_s == "red"
             	in_cycle = true
             end #End of "If Green"
 
-            prev_phase = curr
+            prev_outer = curr
 
         end #End of For Each
 
