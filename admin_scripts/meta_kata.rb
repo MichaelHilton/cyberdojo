@@ -41,9 +41,9 @@ class MetaKata
 	def print
 		#Set NA for Metrics not available
 		@totaltests = "NA" unless @supp_test_langs.include?@language
-		if @ccnum == "" then @ccnum = "NA" end
-		if @branchcov == "" then @branchcov = "NA" end
-		if @statementcov == "" then @statementcov = "NA" end
+		@ccnum = "NA" if @ccnum == ""
+		@branchcov = "NA" if @branchcov == ""
+		@statementcov = "NA" if @statementcov == ""
 
 		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, light data: #{@transitions}, json cycles: #{@json_cycles}"
 	end
@@ -60,9 +60,9 @@ class MetaKata
 	def save(path)
 		#Set NA for Metrics not available
 		@totaltests = "NA" unless @supp_test_langs.include?@language
-		if @ccnum == "" then @ccnum = "NA" end
-		if @branchcov == "" then @branchcov = "NA" end
-		if @statementcov == "" then @statementcov = "NA" end
+		@ccnum = "NA" if @ccnum == ""
+		@branchcov = "NA" if @branchcov == ""
+		@statementcov = "NA" if @statementcov == ""
 
 		f = File.new(path, "a+")
 		f.puts("#{@id}|#{@language}|#{@name}|#{@participants}|#{@animal}|#{@path}|#{@start_date}|#{@total_time}|#{@totallights}|#{@redlights}|#{@greenlights}|#{@amberlights}|#{@sloc}|#{@edited_lines}|#{@totaltests}|#{@ccnum}|#{@branchcov}|#{@statementcov}|#{@cycles}|#{@ends_green}|#{@transitions}|#{@json_cycles}")
