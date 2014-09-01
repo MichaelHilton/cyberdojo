@@ -4,7 +4,7 @@ require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
 
 class MetaKata
-	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines, :totaltests
+	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines, :totaltests, :totalfails
 
 	def initialize(kata, avatar)
 		@kata = kata
@@ -13,6 +13,7 @@ class MetaKata
 
 		@TIME_CEILING = 1200 # Time Ceiling in Seconds Per Light
 		@supp_test_langs = ["Java-1.8_JUnit", "Java-1.8_Mockito", "Java-1.8_Approval", "Java-1.8_Powermockito", "Python-unittest", "Python-pytest", "Ruby-TestUnit", "Ruby-Rspec", "C++-assert", "C++-GoogleTest", "C++-CppUTest", "C++-Catch", "C-assert", "Go-testing", "Javascript-assert", "C#-NUnit", "PHP-PHPUnit", "Perl-TestSimple", "CoffeeScript-jasmine", "Erlang-eunit", "Haskell-hunit", "Scala-scalatest", "Clojure-.test", "Groovy-JUnit", "Groovy-Spock"]
+		@supp_fail_langs = ["Java-1.8_JUnit"]
 
 		@id = kata.id
 		@language = kata.language.name
@@ -28,6 +29,7 @@ class MetaKata
 		@statementcov = ""
 		@totallights = avatar.lights.count
 		@totaltests = 0
+		@totalfails = 0
 		@redlights = 0
 		@greenlights = 0
 		@amberlights = 0
@@ -36,16 +38,19 @@ class MetaKata
 		@total_time = 0
 		@transitions = ""
 		@json_cycles = ""
+		@json_tests = ""
+
 	end
 
 	def print
 		#Set NA for Metrics not available
 		@totaltests = "NA" unless @supp_test_langs.include?@language
+		@totalfails = "NA" unless @supp_fail_langs.include?@language
 		@ccnum = "NA" if @ccnum == ""
 		@branchcov = "NA" if @branchcov == ""
 		@statementcov = "NA" if @statementcov == ""
 
-		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, light data: #{@transitions}, json cycles: #{@json_cycles}"
+		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, total fails: #{totalfails}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, light data: #{@transitions}, json cycles: #{@json_cycles}"
 	end
 
 	def self.init_file(path)
@@ -54,18 +59,19 @@ class MetaKata
 		end
 
 		f = File.new(path, "a+")
-		f.puts("KataID|Language|KataName|NumParticipants|Animal|Path|StartDate|secsInKata|TotalLights|RedLights|GreenLights|AmberLights|SLOC|EditedLines|TotalTests|CCNum|BranchCoverage|StatementCoverage|NumCycles|EndsInGreen|LightData|JsonCycles")
+		f.puts("KataID|Language|KataName|NumParticipants|Animal|Path|StartDate|secsInKata|TotalLights|RedLights|GreenLights|AmberLights|SLOC|EditedLines|TotalTests|TotalFails|CCNum|BranchCoverage|StatementCoverage|NumCycles|EndsInGreen|LightData|JsonCycles")
 	end
 
 	def save(path)
 		#Set NA for Metrics not available
 		@totaltests = "NA" unless @supp_test_langs.include?@language
+		@totalfails = "NA" unless @supp_fail_langs.include?@language		
 		@ccnum = "NA" if @ccnum == ""
 		@branchcov = "NA" if @branchcov == ""
 		@statementcov = "NA" if @statementcov == ""
 
 		f = File.new(path, "a+")
-		f.puts("#{@id}|#{@language}|#{@name}|#{@participants}|#{@animal}|#{@path}|#{@start_date}|#{@total_time}|#{@totallights}|#{@redlights}|#{@greenlights}|#{@amberlights}|#{@sloc}|#{@edited_lines}|#{@totaltests}|#{@ccnum}|#{@branchcov}|#{@statementcov}|#{@cycles}|#{@ends_green}|#{@transitions}|#{@json_cycles}")
+		f.puts("#{@id}|#{@language}|#{@name}|#{@participants}|#{@animal}|#{@path}|#{@start_date}|#{@total_time}|#{@totallights}|#{@redlights}|#{@greenlights}|#{@amberlights}|#{@sloc}|#{@edited_lines}|#{@totaltests}|#{totalfails}|#{@ccnum}|#{@branchcov}|#{@statementcov}|#{@cycles}|#{@ends_green}|#{@transitions}|#{@json_cycles}")
 	end
 
 	def deleted_file(lines)
@@ -200,6 +206,39 @@ class MetaKata
 		end
 	end
 
+	def count_fails(prev, curr)
+		fail_count = 0;
+
+		#Regex
+		#test_regex = /(?=FAILURES!!!)FAILURES!!!\nTests run: (?<tests>\d+), Failures: (?<fails>\d+)/
+		test_regex = /\{:type=>:(added|same), :line=>\"Tests run: (?<tests>\d+),  Failures: (?<fails>\d+)\", :number=>48\}/
+
+		if @supp_fail_langs.include?(@language)
+			#Take Diff
+		    if prev.nil? #If no previous light use the beginning
+			    diff = @avatar.tags[0].diff(curr.number)
+			else
+				diff = @avatar.tags[prev.number].diff(curr.number)
+			end
+
+			case @language.to_s
+			when "Java-1.8_JUnit"
+				diff.each do |filename,content|
+				    if filename.include?"output"
+				    	content.each do |line|
+				        	results = test_regex.match(line.to_s)
+				        	unless results.nil?
+				        		fail_count += results['fails'].to_i
+				        		puts "FAIL COUNT:: #{fail_count}"
+				        	end
+				    	end
+				    end
+				end
+			end
+		end
+		return fail_count
+	end
+
 	def calc_lines(prev, curr)
 	    # determine number of lines changed between lights
 	    line_count = 0;
@@ -231,6 +270,7 @@ class MetaKata
         cycle_lights = Array.new
         cycle_time = 0
         cycle_edits = 0
+        cycle_reds = 0
         first_cycle = true
 
         #Start Json Array
@@ -326,10 +366,18 @@ class MetaKata
                     case light.colour.to_s
                     when "red"
                         @redlights += 1
+                        cycle_reds += 1
                     when "green"
                         @greenlights += 1
                     when "amber"
                         @amberlights += 1
+                    end
+
+                    #Count Failed Tests
+                    if prev.nil? #If no previous light in this cycle use the last cycle's end
+                    	@totalfails += count_fails(prev_cycle_end, light)
+                    else
+                    	@totalfails += count_fails(prev, light)
                     end                    
 
                     #Output
@@ -363,6 +411,7 @@ class MetaKata
         		in_cycle = false
         		cycle_time = 0
         		cycle_edits = 0
+        		cycle_reds = 0
         		cycle_lights.clear
 
         		prev_cycle_end = curr
