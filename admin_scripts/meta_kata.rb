@@ -4,7 +4,7 @@ require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
 
 class MetaKata
-	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines, :totaltests, :totalfails
+	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines, :totaltests, :runtests, :runtestfails
 
 	def initialize(kata, avatar)
 		@kata = kata
@@ -29,7 +29,8 @@ class MetaKata
 		@statementcov = ""
 		@totallights = avatar.lights.count
 		@totaltests = 0
-		@totalfails = 0
+		@runtests = 0
+		@runtestfails = 0
 		@redlights = 0
 		@greenlights = 0
 		@amberlights = 0
@@ -42,15 +43,15 @@ class MetaKata
 
 	end
 
-	def print
+	def to_screen
 		#Set NA for Metrics not available
 		@totaltests = "NA" unless @supp_test_langs.include?@language
-		@totalfails = "NA" unless @supp_fail_langs.include?@language
+		@runtestfails = "NA" unless @supp_fail_langs.include?@language
 		@ccnum = "NA" if @ccnum == ""
 		@branchcov = "NA" if @branchcov == ""
 		@statementcov = "NA" if @statementcov == ""
 
-		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, total fails: #{totalfails}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, light data: #{@transitions}, json cycles: #{@json_cycles}"
+		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, total run tests: #{runtests}, run test fails: #{runtestfails}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, light data: #{@transitions}, json cycles: #{@json_cycles}"
 	end
 
 	def self.init_file(path)
@@ -59,19 +60,19 @@ class MetaKata
 		end
 
 		f = File.new(path, "a+")
-		f.puts("KataID|Language|KataName|NumParticipants|Animal|Path|StartDate|secsInKata|TotalLights|RedLights|GreenLights|AmberLights|SLOC|EditedLines|TotalTests|TotalFails|CCNum|BranchCoverage|StatementCoverage|NumCycles|EndsInGreen|LightData|JsonCycles")
+		f.puts("KataID|Language|KataName|NumParticipants|Animal|Path|StartDate|secsInKata|TotalLights|RedLights|GreenLights|AmberLights|SLOC|EditedLines|TotalTests|TotalRunTests|RunTestFails|CCNum|BranchCoverage|StatementCoverage|NumCycles|EndsInGreen|LightData|JsonCycles")
 	end
 
 	def save(path)
 		#Set NA for Metrics not available
 		@totaltests = "NA" unless @supp_test_langs.include?@language
-		@totalfails = "NA" unless @supp_fail_langs.include?@language		
+		@runtestfails = "NA" unless @supp_fail_langs.include?@language		
 		@ccnum = "NA" if @ccnum == ""
 		@branchcov = "NA" if @branchcov == ""
 		@statementcov = "NA" if @statementcov == ""
 
 		f = File.new(path, "a+")
-		f.puts("#{@id}|#{@language}|#{@name}|#{@participants}|#{@animal}|#{@path}|#{@start_date}|#{@total_time}|#{@totallights}|#{@redlights}|#{@greenlights}|#{@amberlights}|#{@sloc}|#{@edited_lines}|#{@totaltests}|#{totalfails}|#{@ccnum}|#{@branchcov}|#{@statementcov}|#{@cycles}|#{@ends_green}|#{@transitions}|#{@json_cycles}")
+		f.puts("#{@id}|#{@language}|#{@name}|#{@participants}|#{@animal}|#{@path}|#{@start_date}|#{@total_time}|#{@totallights}|#{@redlights}|#{@greenlights}|#{@amberlights}|#{@sloc}|#{@edited_lines}|#{@totaltests}|#{@runtests}|#{@runtestfails}|#{@ccnum}|#{@branchcov}|#{@statementcov}|#{@cycles}|#{@ends_green}|#{@transitions}|#{@json_cycles}")
 	end
 
 	def deleted_file(lines)
@@ -207,36 +208,32 @@ class MetaKata
 	end
 
 	def count_fails(prev, curr)
-		fail_count = 0;
 
-		#Regex
-		#test_regex = /(?=FAILURES!!!)FAILURES!!!\nTests run: (?<tests>\d+), Failures: (?<fails>\d+)/
-		test_regex = /\{:type=>:(added|same), :line=>\"Tests run: (?<tests>\d+),  Failures: (?<fails>\d+)\", :number=>48\}/
+		#Take Diff
+	    if prev.nil? #If no previous light use the beginning
+		    diff = @avatar.tags[0].diff(curr.number)
+		else
+			diff = @avatar.tags[prev.number].diff(curr.number)
+		end
 
-		if @supp_fail_langs.include?(@language)
-			#Take Diff
-		    if prev.nil? #If no previous light use the beginning
-			    diff = @avatar.tags[0].diff(curr.number)
-			else
-				diff = @avatar.tags[prev.number].diff(curr.number)
-			end
+		diff.each do |filename, content|
+			if filename.include?"output"
+				content.each do |line|
 
-			case @language.to_s
-			when "Java-1.8_JUnit"
-				diff.each do |filename,content|
-				    if filename.include?"output"
-				    	content.each do |line|
-				        	results = test_regex.match(line.to_s)
-				        	unless results.nil?
-				        		fail_count += results['fails'].to_i
-				        		puts "FAIL COUNT:: #{fail_count}"
-				        	end
-				    	end
-				    end
+					case @language.to_s
+					when "Java-1.8_JUnit"
+						re = /\{:type=>:(added|same), :line=>\"Tests run: (?<tests>\d+),  Failures: (?<fails>\d+)\", :number=>\d+\}/
+						result = re.match(line.to_s)
+						
+						unless result.nil?
+							@runtests += result['tests'].to_i
+							@runtestfails += result['fails'].to_i
+						end
+					end
 				end
 			end
 		end
-		return fail_count
+		
 	end
 
 	def calc_lines(prev, curr)
@@ -375,9 +372,9 @@ class MetaKata
 
                     #Count Failed Tests
                     if prev.nil? #If no previous light in this cycle use the last cycle's end
-                    	@totalfails += count_fails(prev_cycle_end, light)
+                    	count_fails(prev_cycle_end, light)
                     else
-                    	@totalfails += count_fails(prev, light)
+                    	count_fails(prev, light)
                     end                    
 
                     #Output
