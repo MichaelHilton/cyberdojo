@@ -34,6 +34,7 @@ class MetaKata
 		@redlights = 0
 		@greenlights = 0
 		@amberlights = 0
+		@consecutive_reds = 0
 		@cycles = 0
 		@ends_green = 0
 		@total_time = 0
@@ -51,7 +52,7 @@ class MetaKata
 		@branchcov = "NA" if @branchcov == ""
 		@statementcov = "NA" if @statementcov == ""
 
-		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, sloc: #{@sloc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, total run tests: #{runtests}, run test fails: #{runtestfails}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, light data: #{@transitions}, json cycles: #{@json_cycles}"
+		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, consecutive reds: #{@consecutive_reds}, sloc: #{@sloc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, total run tests: #{runtests}, run test fails: #{runtestfails}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, light data: #{@transitions}, json cycles: #{@json_cycles}"
 	end
 
 	def self.init_file(path)
@@ -60,7 +61,7 @@ class MetaKata
 		end
 
 		f = File.new(path, "a+")
-		f.puts("KataID|Language|KataName|NumParticipants|Animal|Path|StartDate|secsInKata|TotalLights|RedLights|GreenLights|AmberLights|SLOC|EditedLines|TotalTests|TotalRunTests|RunTestFails|CCNum|BranchCoverage|StatementCoverage|NumCycles|EndsInGreen|LightData|JsonCycles")
+		f.puts("KataID|Language|KataName|NumParticipants|Animal|Path|StartDate|secsInKata|TotalLights|RedLights|GreenLights|AmberLights|ConsecutiveReds|SLOC|EditedLines|TotalTests|TotalRunTests|RunTestFails|CCNum|BranchCoverage|StatementCoverage|NumCycles|EndsInGreen|LightData|JsonCycles")
 	end
 
 	def save(path)
@@ -72,7 +73,7 @@ class MetaKata
 		@statementcov = "NA" if @statementcov == ""
 
 		f = File.new(path, "a+")
-		f.puts("#{@id}|#{@language}|#{@name}|#{@participants}|#{@animal}|#{@path}|#{@start_date}|#{@total_time}|#{@totallights}|#{@redlights}|#{@greenlights}|#{@amberlights}|#{@sloc}|#{@edited_lines}|#{@totaltests}|#{@runtests}|#{@runtestfails}|#{@ccnum}|#{@branchcov}|#{@statementcov}|#{@cycles}|#{@ends_green}|#{@transitions}|#{@json_cycles}")
+		f.puts("#{@id}|#{@language}|#{@name}|#{@participants}|#{@animal}|#{@path}|#{@start_date}|#{@total_time}|#{@totallights}|#{@redlights}|#{@greenlights}|#{@amberlights}|#{@consecutive_reds}|#{@sloc}|#{@edited_lines}|#{@totaltests}|#{@runtests}|#{@runtestfails}|#{@ccnum}|#{@branchcov}|#{@statementcov}|#{@cycles}|#{@ends_green}|#{@transitions}|#{@json_cycles}")
 	end
 
 	def deleted_file(lines)
@@ -394,8 +395,11 @@ class MetaKata
                     prev = light
                 end #End of For Each
 
-                #If this was a TPP Cycle then process it accordingly
+                #If this was a TP Cycle then process it accordingly
                 if cycle == "TP"
+	                if cycle_reds > @consecutive_reds
+   	             		@consecutive_reds = cycle_reds
+  	            	end                	
                 	@json_cycles += '],"totalEdits":' + cycle_edits.to_s + ',"totalTime":' + cycle_time.to_s + '}'
                     @cycles += 1
                 #elsif cycle == "R"
