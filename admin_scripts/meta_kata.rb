@@ -35,7 +35,7 @@ class MetaKata
 		@greenlights = 0
 		@amberlights = 0
 		@cycles = 0
-		@ends_green = false
+		@ends_green = 0
 		@total_time = 0
 		@transitions = ""
 		@json_cycles = ""
@@ -233,7 +233,7 @@ class MetaKata
 				end
 			end
 		end
-		
+
 	end
 
 	def calc_lines(prev, curr)
@@ -426,9 +426,9 @@ class MetaKata
 
         #Determine if Kata Ends on Green
         if @avatar.lights[@avatar.lights.count - 1].colour.to_s == "green"
-            @ends_green = true
+            @ends_green = 1
         else
-            @ends_green = false
+            @ends_green = 0
         end
 
     end
