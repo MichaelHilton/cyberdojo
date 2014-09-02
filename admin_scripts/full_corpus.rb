@@ -3,7 +3,8 @@
 require File.dirname(__FILE__) + '/lib_domain'
 require File.dirname(__FILE__) + '/meta_kata'
 
-kata_limit = 25
+#Process Limiters
+kata_limit = 250000000
 lang_limit = ["Java-1.8_JUnit", "Python-unittest"]
 save_file = Dir.pwd.to_s + "/corpus.csv"
 
@@ -13,9 +14,8 @@ dojo = create_dojo
 
 count = 0
 dojo.katas.each do |kata|
-	if kata.exercise.name.to_s != "Verbal" && lang_limit.include?(kata.language.name.to_s)
+	if kata.exercise.name.to_s != "Verbal" #&& lang_limit.include?(kata.language.name.to_s)
 		kata.avatars.active.each do |avatar|
-			
 			count += 1
 			mk = MetaKata.new(kata, avatar)
 
@@ -24,21 +24,20 @@ dojo.katas.each do |kata|
 			mk.calc_sloc
 			mk.coverage_metrics
 			mk.count_tests
-			#mk.print #for debugging
 
+			#Debugging
+			#mk.to_screen
+
+			#File Output
 			mk.save(save_file)
 
-			if count % 5 == 0
-				print "."
-			end
-			
-			if count % 200 == 0
-				puts "[#{count}]"
-			end
+			#Progress Display
+			print "\r " + dots(count)
 
+			break if count >= kata_limit
 		end
+		break if count >= kata_limit
 	end
-
 	break if count >= kata_limit
 end
-puts "[#{count}]"
+puts

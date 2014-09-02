@@ -25,7 +25,7 @@ end
 $dot_count = 0
 dojo = create_dojo
 
-$stop_at = 40000000
+$stop_at = 3000000000
 
 puts
 days,weekdays,languages,exercises = { },{ },{ },{ }
@@ -38,35 +38,75 @@ dojo.katas.each do |kata|
         language = kata.language.name
         
         kata.avatars.active.each do |avatar|
+            if(avatar.lights.last.colour == "amber")
+                puts language
+                puts avatar.lights.last.colour
+            end
             
             if language == "Python-unittest"
-                puts "PYTHON"
-                puts avatar.path
-                unless  File.exist?(avatar.path+ 'sandbox/CodeCoverageReport.csv')
+                
+                #puts "PYTHON"
+                #puts avatar.path
+                #puts avatar.lights
+                #puts avatar.path+ 'sandbox/CodeCoverageReport.csv'
+                unless  File.exist?(avatar.path+ 'sandbox/pythonCodeCoverage.csv')
                     
-                    #puts "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
-                    `rm #{avatar.path}sandbox/pythonFiles.txt`
-                    `rm #{avatar.path}sandbox/pythonCodeCoverage.csv`
-                    `rm -rf #{avatar.path}sandbox/pythonCodeCoverage`
-                    #puts "rm #{avatar.path}sandbox/*.pyc"
-                    `rm #{avatar.path}sandbox/*.pyc`
+                    puts "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
                     
-                    allFiles =  Dir.entries(avatar.path+"sandbox")
+                    backwardsLights = []
+                    avatar.lights.each do |eachLight|
+                      backwardsLights.push(eachLight)
+                    end
+                    #puts backwardsLights.length
+                    i = backwardsLights.length-1
+                    #puts i
+                    while (i > 0)
+                        #   puts i
+                        curLight = backwardsLights[i]
+                        #puts curLight.colour
+                        if(curLight.colour.to_s != "amber")
+                            break
+                            end
+                        i -= 1
+                    end
+                    #puts i
+                    puts backwardsLights[i].colour
+                    puts avatar.tags[i].visible_files
+                    avatar.tags[i].visible_files.each do |gitFile|
+                         currfileName =  gitFile[0].to_s
+                         puts currfileName
+                         #                         '.py' in currfileName
+                         if currfileName.include? ".py"
+                            dirname = File.dirname("#{avatar.path}lastCompile/")
+                            `mkdir #{avatar.path}lastCompile/`
+
+                            File.open("#{avatar.path}lastCompile/"+gitFile[0], "w+") do |f|
+                                f.puts(gitFile[1])
+                            end
+                         end
+                    end
+                    
+                    `rm #{avatar.path}lastCompile/pythonFiles.txt`
+                    `rm #{avatar.path}lastCompile/pythonCodeCoverage.csv`
+                    `rm -rf #{avatar.path}lastCompile/pythonCodeCoverage`
+                    `rm #{avatar.path}lastCompile/*.pyc`
+                    
+                    allFiles =  Dir.entries(avatar.path+"lastCompile")
                     fileNames = []
                     allFiles.each do |currFile|
                         pythonFile = currFile.to_s =~ /.py/i
                         unless pythonFile.nil?
-                            fileNames.push(avatar.path+"sandbox/"+currFile)
+                            fileNames.push(avatar.path+"lastCompile/"+currFile)
                         end
                         
                     end
-                    File.open("#{avatar.path}sandbox/pythonFiles.txt", "w+") do |f|
+                    File.open("#{avatar.path}lastCompile/pythonFiles.txt", "w+") do |f|
                         f.puts(fileNames)
                     end
                     
                     `rm .figleaf`
-                    `./figleaf_bin/figleaf #{avatar.path}sandbox/test*.py `
-                    `./figleaf_bin/figleaf2html -f #{avatar.path}sandbox/pythonFiles.txt -d #{avatar.path}sandbox/pythonCodeCoverage .figleaf`
+                    `./figleaf_bin/figleaf #{avatar.path}lastCompile/test*.py `
+                    `./figleaf_bin/figleaf2html -f #{avatar.path}lastCompile/pythonFiles.txt -d #{avatar.path}lastCompile/pythonCodeCoverage .figleaf`
                     
                     doc = open(avatar.path+"sandbox/pythonCodeCoverage/index.html") { |f| Hpricot(f) }
                     
@@ -111,21 +151,66 @@ dojo.katas.each do |kata|
             end
             
             if language == "Java-1.8_JUnit"
-                puts avatar.path
-                puts "JAVA"
+                #puts avatar.path+ 'CodeCoverageReport.csv'
+                #puts "JAVA"
                 #   kata.avatars.active.each do |avatar|
-                unless  File.exist?(avatar.path+ 'CodeCoverageReport.csv')
+                if (File.zero?(avatar.path+ 'CodeCoverageReport.csv'))
+                print  "EMPTY "
+                puts avatar.path+ 'CodeCoverageReport.csv'
+                
+                
+                
+                backwardsLights = []
+                avatar.lights.each do |eachLight|
+                    backwardsLights.push(eachLight)
+                end
+                #puts backwardsLights.length
+                i = backwardsLights.length-1
+                #puts i
+                while (i > 0)
+                    #   puts i
+                    curLight = backwardsLights[i]
+                    #puts curLight.colour
+                    if(curLight.colour.to_s != "amber")
+                        break
+                    end
+                    i -= 1
+                end
+                #puts i
+                puts backwardsLights[i].colour
+                puts avatar.tags[i].visible_files
+                avatar.tags[i].visible_files.each do |gitFile|
+                    currfileName =  gitFile[0].to_s
+                    puts currfileName
+                    #                         '.py' in currfileName
+                    if currfileName.include? ".java"
+                        dirname = File.dirname("#{avatar.path}lastCompile/")
+                        `mkdir #{avatar.path}lastCompile/`
+                        
+                        File.open("#{avatar.path}lastCompile/"+gitFile[0], "w+") do |f|
+                            f.puts(gitFile[1])
+                        end
+                    end
+                end
+
+
+
+
+                # unless  File.exist?(avatar.path+ 'CodeCoverageReport.csv')
                     print "ADDING CODE COVERAGE FOR: "
                     puts avatar.path
                     `touch #{avatar.path}CodeCoverageReport.csv`
-                    puts avatar.path
+                    # puts avatar.path
                     #                copyCommand =  "cp "+avatar.path + "sandbox/*.java ./calcCodeCovg/tempDir"
-                    `rm ./calcCodeCovg/src/*`
+                    `rm -f ./calcCodeCovg/src/*`
                     `rm -r ./calcCodeCovg/isrc/*`
                     `rm -r ./calcCodeCovg/report.csv`
                     `rm -r ./*.clf`
                     
-                    `cp #{avatar.path}sandbox/*.java ./calcCodeCovg/src`
+                    puts "cp #{avatar.path}lastCompile/*.java ./calcCodeCovg/src/"
+                    
+                    `cp #{avatar.path}lastCompile/*.java ./calcCodeCovg/src`
+                    
                     allFiles =  Dir.entries("./calcCodeCovg/src/")
                     currTestClass = ""
                     allFiles.each do |currFile|
