@@ -395,16 +395,15 @@ class MetaKata
                     prev = light
                 end #End of For Each
 
-                #If this was a TPP Cycle then process it accordingly
+                #If this was a TP Cycle then process it accordingly
                 if cycle == "TP"
+	                if cycle_reds > @consecutive_reds
+   	             		@consecutive_reds = cycle_reds
+  	            	end                	
                 	@json_cycles += '],"totalEdits":' + cycle_edits.to_s + ',"totalTime":' + cycle_time.to_s + '}'
                     @cycles += 1
                 #elsif cycle == "R"
                 	#Refactor
-                end
-
-                if cycle_reds > @consecutive_reds
-                	@consecutive_reds = cycle_reds
                 end
 
                 #Reset Cycle Metrics
