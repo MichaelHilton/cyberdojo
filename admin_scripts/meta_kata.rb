@@ -4,7 +4,7 @@ require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
 
 class MetaKata
-	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines, :totaltests, :runtests, :runtestfails
+	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines, :totaltests, :runtests, :runtestfails, :test_loc, :production_loc
 
 	def initialize(kata, avatar)
 		@kata = kata
@@ -23,6 +23,8 @@ class MetaKata
 		@name = kata.exercise.name
 		@path = avatar.path
 		@sloc = 0
+		@test_loc = 0
+		@production_loc = 0
 		@edited_lines = 0
 		@ccnum = ""
 		@branchcov = ""
@@ -41,6 +43,7 @@ class MetaKata
 		@transitions = ""
 		@json_cycles = ""
 		@json_tests = ""
+		
 
 	end
 
@@ -52,7 +55,7 @@ class MetaKata
 		@branchcov = "NA" if @branchcov == ""
 		@statementcov = "NA" if @statementcov == ""
 
-		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, consecutive reds: #{@consecutive_reds}, sloc: #{@sloc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, total run tests: #{runtests}, run test fails: #{runtestfails}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, light data: #{@transitions}, json cycles: #{@json_cycles}"
+		puts "id: #{@id}, language: #{@language}, name: #{@name}, participants: #{@participants}, path: #{@path}, start date: #{@start_date}, seconds in kata: #{@total_time}, total lights: #{@totallights}, red lights: #{@redlights}, green lights: #{@greenlights}, amber lights: #{@amberlights}, consecutive reds: #{@consecutive_reds}, sloc: #{@sloc}, test_loc: #{@test_loc}, production_loc: #{@production_loc}, edited lines: #{@edited_lines}, total tests: #{@totaltests}, total run tests: #{runtests}, run test fails: #{runtestfails}, code coverage: #{@ccnum}, branch coverage: #{@branchcov}, statement coverage: #{@statementcov}, num cycles: #{@cycles}, ending in green: #{@ends_green}, light data: #{@transitions}, json cycles: #{@json_cycles}"
 	end
 
 	def self.init_file(path)
@@ -86,11 +89,23 @@ class MetaKata
 
 	def calc_sloc
 		dataset = {}
-		command = `./cloc-1.62.pl --by-file --quiet --sum-one --exclude-list-file=./clocignore --csv #{@avatar.path}sandbox/`
-		csv = CSV.parse(command)
-
-		unless(csv.inspect() == "[]")
-			@sloc = @sloc + csv[2][4].to_i
+		Dir.entries(@path.to_s + "sandbox").each do |currFile|
+			isFile = currFile.to_s =~ /\.java$|\.py$|\.c$|\.cpp$|\.js$|\.php$|\.rb$|\.hs$|\.clj$|\.go$|\.scala$|\.coffee$|\.cs$|\.groovy$\.erl$/i			
+			unless isFile.nil?
+				file = @path.to_s + "sandbox/" + currFile.to_s			
+				command = `./cloc-1.62.pl --by-file --quiet --sum-one --exclude-list-file=./clocignore --csv #{file}`
+				csv = CSV.parse(command)
+				unless(csv.inspect() == "[]")						
+					if @language.to_s == "Java-1.8_JUnit"
+						if file.to_s.include?("test") || file.to_s.include?("Test")
+							@test_loc = @test_loc + csv[2][4].to_i
+						else						
+							@production_loc = @production_loc + csv[2][4].to_i
+						end
+					end
+					@sloc = @sloc + csv[2][4].to_i	
+				end
+			end
 		end
 	end
 
@@ -250,7 +265,7 @@ class MetaKata
 		diff.each do |filename,lines|
 		    non_code_filenames = [ 'output', 'cyber-dojo.sh', 'instructions' ]
 		    if !non_code_filenames.include?(filename) && !deleted_file(lines) && !new_file(lines)
-		        line_count += lines.count { |line| line[:type] === :added }
+		        line_count += lines.count { |line| line[:type] === :added}
 		        line_count += lines.count { |line| line[:type] === :deleted }
 		    end
 		end

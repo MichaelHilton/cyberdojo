@@ -29,7 +29,8 @@ dojo.katas.each do |kata|
 			#mk.to_screen
 
 			#File Output
-			mk.save(save_file)
+			#mk.save(save_file)
+			mk.to_screen
 
 			#Progress Display
 			print "\r " + dots(count)
