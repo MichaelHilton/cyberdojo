@@ -4,7 +4,7 @@ require File.dirname(__FILE__) + '/lib_domain'
 require File.dirname(__FILE__) + '/meta_kata'
 
 #Process Limiters
-kata_limit = 250000000
+kata_limit = 25000000
 lang_limit = ["Java-1.8_JUnit", "Python-unittest"]
 save_file = Dir.pwd.to_s + "/corpus.csv"
 
@@ -29,8 +29,7 @@ dojo.katas.each do |kata|
 			#mk.to_screen
 
 			#File Output
-			#mk.save(save_file)
-			mk.to_screen
+			mk.save(save_file)
 
 			#Progress Display
 			print "\r " + dots(count)

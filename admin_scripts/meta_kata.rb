@@ -43,7 +43,6 @@ class MetaKata
 		@transitions = ""
 		@json_cycles = ""
 		@json_tests = ""
-		
 
 	end
 
@@ -80,11 +79,11 @@ class MetaKata
 	end
 
 	def deleted_file(lines)
-    	lines.all? { |line| line[:type] === :deleted }
+    	return lines.all? { |line| line[:type] === :deleted }
 	end
 
 	def new_file(lines)
-    	lines.all? { |line| line[:type] === :added }
+    	return lines.all? { |line| line[:type] === :added }
 	end
 
 	def calc_sloc
@@ -97,7 +96,7 @@ class MetaKata
 				csv = CSV.parse(command)
 				unless(csv.inspect() == "[]")						
 					if @language.to_s == "Java-1.8_JUnit"
-						if file.to_s.include?("test") || file.to_s.include?("Test")
+					if File.open(file).read.scan(/junit/).count > 0
 							@test_loc = @test_loc + csv[2][4].to_i
 						else						
 							@production_loc = @production_loc + csv[2][4].to_i
@@ -254,7 +253,9 @@ class MetaKata
 
 	def calc_lines(prev, curr)
 	    # determine number of lines changed between lights
-	    line_count = 0;
+	    test_count = 0
+	    code_count = 0
+	    is_test = false
 
 	    if prev.nil? #If no previous light use the beginning
 		    diff = @avatar.tags[0].diff(curr.number)
@@ -263,14 +264,83 @@ class MetaKata
 		end
 
 		diff.each do |filename,lines|
-		    non_code_filenames = [ 'output', 'cyber-dojo.sh', 'instructions' ]
-		    if !non_code_filenames.include?(filename) && !deleted_file(lines) && !new_file(lines)
-		        line_count += lines.count { |line| line[:type] === :added}
-		        line_count += lines.count { |line| line[:type] === :deleted }
-		    end
-		end
 
-	    return line_count
+			isFile = filename.match(/\.java$|\.py$|\.c$|\.cpp$|\.js$|\.php$|\.rb$|\.hs$|\.clj$|\.go$|\.scala$|\.coffee$|\.cs$|\.groovy$\.erl$/i)
+
+		    unless isFile.nil? || deleted_file(lines) || new_file(lines)
+		    	lines.each do |line|
+					case @language.to_s
+					when "Java-1.8_JUnit"
+						is_test = true if /junit/.match(line.to_s)
+					when "Java-1.8_Mockito"
+						is_test = true if /org\.mockito/.match(line.to_s)
+					when "Java-1.8_Powermockito"
+						is_test = true if /org\.powermock/.match(line.to_s)
+					when "Java-1.8_Approval"
+						is_test = true if /org\.approvaltests/.match(line.to_s)			
+					when "Python-unittest"
+						is_test = true if /unittest/.match(line.to_s)
+					when "Python-pytest"
+						is_test = true if filename.include?"test"			
+					when "Ruby-TestUnit"
+						is_test = true if /test\/unit/.match(line.to_s)
+					when "Ruby-Rspec"
+						is_test = true if /describe/.match(line.to_s)
+					when "C++-assert"
+						is_test = true if /cassert/.match(line.to_s)
+					when "C++-GoogleTest"
+						is_test = true if /gtest\.h/.match(line.to_s)
+					when "C++-CppUTest"
+						is_test = true if /CppUTest/.match(line.to_s)
+					when "C++-Catch"
+						is_test = true if /catch\.hpp/.match(line.to_s)		
+					when "C-assert"
+						is_test = true if /assert\.h/.match(line.to_s)							
+					when "Go-testing"
+						is_test = true if /testing/.match(line.to_s)
+					when "Javascript-assert"
+						is_test = true if /assert/.match(line.to_s)				
+					when "C#-NUnit"
+						is_test = true if /NUnit\.Framework/.match(line.to_s)
+					when "PHP-PHPUnit"
+						is_test = true if /PHPUnit_Framework_TestCase/.match(line.to_s)
+					when "Perl-TestSimple"
+						is_test = true if /use Test/.match(line.to_s)
+					when "CoffeeScript-jasmine"
+						is_test = true if /jasmine-node/.match(line.to_s)
+					when "Erlang-eunit"
+						is_test = true if /eunit\.hrl/.match(line.to_s)
+					when "Haskell-hunit"
+						is_test = true if /Test\.HUnit/.match(line.to_s)
+					when "Scala-scalatest"
+						is_test = true if /org\.scalatest/.match(line.to_s)
+					when "Clojure-.test"
+						is_test = true if /clojure\.test/.match(line.to_s)
+					when "Groovy-JUnit"
+						is_test = true if /org\.junit/.match(line.to_s)
+					when "Groovy-Spock"
+						is_test = true if /spock\.lang/.match(line.to_s)
+					else
+						#Language not supported
+					end
+
+					break if is_test == true
+		    	end #End of Lines For Each
+
+		    	#POSSIBLE TODO: Add bag to check for double counting of edited lines
+				if is_test
+		        	test_count += lines.count { |line| line[:type] === :added }
+		        	test_count += lines.count { |line| line[:type] === :deleted }
+		        else
+		    		code_count += lines.count { |line| line[:type] === :added }
+		        	code_count += lines.count { |line| line[:type] === :deleted }
+		        end
+		        
+		        is_test = false		    	
+		    end #End of Unless statment
+		end #End of Diff For Each
+
+	    return test_count, code_count
 	end
 
     def calc_cycles
@@ -281,9 +351,13 @@ class MetaKata
         in_cycle = false
         cycle = ""
         cycle_lights = Array.new
-        cycle_time = 0
-        cycle_edits = 0
+        cycle_test_edits = 0
+        cycle_code_edits = 0
+		cycle_total_edits = 0          
+		cycle_test_change = 0
+		cycle_code_change = 0
         cycle_reds = 0
+        cycle_time = 0		
         first_cycle = true
 
         #Start Json Array
@@ -348,12 +422,18 @@ class MetaKata
                     #Count Lines Modified in Light, Cycle & Kata
                     #Lines Modified in Light
                     if prev.nil? #If no previous light in this cycle use the last cycle's end
-                    	line_count = calc_lines(prev_cycle_end, light)
+                    	test_edits, code_edits = calc_lines(prev_cycle_end, light)
                     else
-                    	line_count = calc_lines(prev, light)
+                    	test_edits, code_edits = calc_lines(prev, light)
                     end
-                    cycle_edits += line_count #Total Lines Modified in Cycle
-                    @edited_lines += line_count #Total Lines Modified in Kata
+                	#Total Lines Modified in Cycle    
+                    cycle_test_edits += test_edits
+                    cycle_code_edits += code_edits
+                	#Total Lines Modified in Kata    
+                    @edited_lines += test_edits
+                    @edited_lines += code_edits
+                    light_edits = code_edits + test_edits
+                    cycle_total_edits += light_edits
 
                     #Determine Time Spent in Light
                     if prev_cycle_end.nil? && prev.nil? #If the first light of the Kata
@@ -393,6 +473,13 @@ class MetaKata
                     	count_fails(prev, light)
                     end                    
 
+                    #Eliminate Unsupported Stats
+					unless @supp_test_langs.include?@language
+						light_edits = "NA"
+						test_edits = "NA"
+						code_edits = "NA"
+					end
+
                     #Output
                     if (cycle == "TP")
                     	if light_index == 0
@@ -400,22 +487,36 @@ class MetaKata
                     	else
                     		@json_cycles += ',{"color":"'
                     	end
-                    	@json_cycles += light.colour.to_s + '","edits":' + line_count.to_s + ',"time":' + time_diff.to_s + '}'
-                        @transitions += "+" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
+                    	@json_cycles += light.colour.to_s + '","totalEdits":' + light_edits.to_s + ',"testEdits":' + test_edits.to_s + ',"codeEdits":' + code_edits.to_s + ',"time":' + time_diff.to_s + '}'
+                        @transitions += "+" + "{" + light.colour.to_s + ":" + light_edits.to_s + ":" + test_edits.to_s + ":" + code_edits.to_s + ":" + time_diff.to_s + "}"
                     elsif cycle == "R"
-                        @transitions += "~" + "{" + light.colour.to_s + ":" + line_count.to_s + ":" + time_diff.to_s + "}"
+                        @transitions += "~" + "{" + light.colour.to_s + ":" + light_edits.to_s + ":" + test_edits.to_s + ":" + code_edits.to_s + ":" + time_diff.to_s + "}"
                     end
 
                     #Assign current light to previous
                     prev = light
                 end #End of For Each
 
+                #Eliminate Unsupported Stats
+                unless @supp_test_langs.include?@language
+					cycle_total_edits = "NA"
+					cycle_test_edits = "NA"
+					cycle_code_edits = "NA"
+					cycle_test_change = "NA"
+					cycle_code_change = "NA"
+                end
+
                 #If this was a TP Cycle then process it accordingly
                 if cycle == "TP"
+                	#Set consecutive reds if new maximum
 	                if cycle_reds > @consecutive_reds
    	             		@consecutive_reds = cycle_reds
-  	            	end                	
-                	@json_cycles += '],"totalEdits":' + cycle_edits.to_s + ',"totalTime":' + cycle_time.to_s + '}'
+  	            	end
+  	            	#Count changes to Test and Code from diff of entire cycle
+  	            	cycle_test_change, cycle_code_change = calc_lines(prev_cycle_end, curr)
+  	            	#Output Json Cycle Summary
+                	@json_cycles += '],"totalCycleEdits":' + cycle_total_edits.to_s + ',"totalCycleTestEdits":' + cycle_test_edits.to_s + ',"totalCycleCodeEdits":' + cycle_code_edits.to_s + ',"cycleTestChanges":' + cycle_test_change.to_s + ',"cycleCodeChanges":' + cycle_code_change.to_s + ',"totalCycleTime":' + cycle_time.to_s + '}'
+                	#Increment Cycle Counter
                     @cycles += 1
                 #elsif cycle == "R"
                 	#Refactor
@@ -425,8 +526,12 @@ class MetaKata
                 test_change = false
         		prod_change = false
         		in_cycle = false
+        		cycle_test_change = 0
+        		cycle_code_change = 0
+        		cycle_test_edits = 0
+        		cycle_code_edits = 0  
+        		cycle_total_edits = 0      		
         		cycle_time = 0
-        		cycle_edits = 0
         		cycle_reds = 0
         		cycle_lights.clear
 

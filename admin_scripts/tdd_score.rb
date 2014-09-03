@@ -2,9 +2,9 @@
 
 INPUT = './corpus_withTestFails.csv'
 OUTPUT = './corpus_withTestFails_scored.csv'
-KATA_LIMIT = 150000
+KATA_LIMIT = 150
 SUPP_LANGS = ["Java-1.8_JUnit", "Python-unittest"]
-DEBUG = false
+DEBUG = true
 
 #Data Ordering Constants
 ID = 0
@@ -54,13 +54,13 @@ File.readlines(INPUT).each_with_index do |kata, index|
 	next unless SUPP_LANGS.include?metric[LANGUAGE]
 
 	#Skip if covereage == NA
-	next if metric[STATEMENT_COVERAGE] == "NA"
+	next if metric[STATEMENT_COVERAGE].to_s == "NA"
 
 	#Skip if not FizzBuzz
-	#next if metric[KATA] == "FizzBuzz"
+	next unless metric[KATA].to_s == "Fizz_Buzz"
 
 	#Skip if cycles is under a minimum
-	#next if metric[CYCLES].to_i < 8
+	next if metric[CYCLES].to_i < 8
 
 	#Not excluded so increment counter
 	count += 1
@@ -73,15 +73,16 @@ File.readlines(INPUT).each_with_index do |kata, index|
 	time_score = 0
 	test_score = 0
 
+# 0 Cycles gets a Score of 0
 unless metric[CYCLES].to_i == 0
 
 	#CODE COVERAGE SCORE
 	code_coverage = metric[STATEMENT_COVERAGE].to_f
 
 	#CYCLE SCORE
+	#total cycles / total lines, should be around 0.3, distance penalized x2
 	unless metric[CYCLES].to_f > metric[TOTAL_LINES].to_f
 
-		#total cycles / total lines (ideally normalized based on the language)
 		cycle_score = 1 - ((0.3 - (metric[CYCLES].to_f / metric[TOTAL_LINES].to_f)) * 2).abs
 		cycle_score = 0 if cycle_score < 0
 		cycle_score = 1 if cycle_score > 1
@@ -89,17 +90,19 @@ unless metric[CYCLES].to_i == 0
 	end
 
 	#EDIT SCORE
+	#lines edited / cycles, should be roughly 25 on average, the further you get from 25 the worse the score
 	unless metric[LINES_EDITED].to_f < metric[CYCLES].to_f
-
-		#lines edited / cycles
-		edit_score = 1 - (((metric[LINES_EDITED].to_f / metric[CYCLES].to_f) - 25).abs / 100)
+		if (metric[LINES_EDITED].to_f / metric[CYCLES].to_f) <= 25
+			edit_score = 1
+		else
+			edit_score = 1 - (((metric[LINES_EDITED].to_f / metric[CYCLES].to_f) - 25).abs / 100)
+		end
 		edit_score = 0 if edit_score < 0
 		edit_score = 1 if edit_score > 1
-
 	end
 
 	#TIME SCORE
-	#total time / cycles
+	#total time / cycles, should be 30 sec or less according to Kent Beck, score diminishes until you hit the 15 min mark = 0
 	if (metric[TOTAL_TIME].to_f / metric[CYCLES].to_f) <= 30
 		time_score = 1
 	else
@@ -109,6 +112,7 @@ unless metric[CYCLES].to_i == 0
 	time_score = 1 if time_score > 1
 
 	#TEST_SCORE
+	#total tests should = cycles, if less tests than cycles, penalize harder (100), if greater penalize lightly (30)
 	if metric[TOTAL_TESTS].to_i == metric[CYCLES].to_i
 		test_score = 1
 	elsif metric[TOTAL_TESTS].to_i > metric[CYCLES].to_i
@@ -123,7 +127,8 @@ end
 	#==END SCORING METRICS==
 
 	#==BEGIN SCORE CALCULATION==
-	tdd_score = (((code_coverage) + (cycle_score) + (edit_score) + (time_score) + (test_score)) / 5) * 100
+	#Numbers are weights, divide by their sum + 5 at the end for the total percentage
+	tdd_score = (((30 * code_coverage) + (20 * cycle_score) + (10 * edit_score) + (40 * time_score) + (40 * test_score)) / 145)
 	#==END SCORE CALCULATION==
 
 	#Debug
