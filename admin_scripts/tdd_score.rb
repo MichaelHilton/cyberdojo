@@ -2,7 +2,7 @@
 
 INPUT = './corpus_withTestFails.csv'
 OUTPUT = './corpus_withTestFails_scored.csv'
-KATA_LIMIT = 150000
+KATA_LIMIT = 150
 SUPP_LANGS = ["Java-1.8_JUnit", "Python-unittest"]
 DEBUG = true
 
@@ -128,7 +128,7 @@ end
 
 	#==BEGIN SCORE CALCULATION==
 	#Numbers are weights, divide by their sum + 5 at the end for the total percentage
-	tdd_score = (((30 * code_coverage) + (20 * cycle_score) + (10 * edit_score) + (30 * time_score) + (20 * test_score)) / 115)
+	tdd_score = (((30 * code_coverage) + (20 * cycle_score) + (10 * edit_score) + (40 * time_score) + (40 * test_score)) / 145)
 	#==END SCORE CALCULATION==
 
 	#Debug

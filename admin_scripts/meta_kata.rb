@@ -478,11 +478,6 @@ class MetaKata
 						light_edits = "NA"
 						test_edits = "NA"
 						code_edits = "NA"
-						cycle_total_edits = "NA"
-						cycle_test_edits = "NA"
-						cycle_code_edits = "NA"
-						cycle_test_change = "NA"
-						cycle_code_change = "NA"
 					end
 
                     #Output
@@ -501,6 +496,15 @@ class MetaKata
                     #Assign current light to previous
                     prev = light
                 end #End of For Each
+
+                #Eliminate Unsupported Stats
+                unless @supp_test_langs.include?@language
+					cycle_total_edits = "NA"
+					cycle_test_edits = "NA"
+					cycle_code_edits = "NA"
+					cycle_test_change = "NA"
+					cycle_code_change = "NA"
+                end
 
                 #If this was a TP Cycle then process it accordingly
                 if cycle == "TP"
