@@ -76,7 +76,7 @@ class MetaKata
 		@statementcov = "NA" if @statementcov == ""
 
 		f = File.new(path, "a+")
-		f.puts("#{@id}|#{@language}|#{@name}|#{@participants}|#{@animal}|#{@path}|#{@start_date}|#{@total_time}|#{@totallights}|#{@redlights}|#{@greenlights}|#{@amberlights}|#{@consecutive_reds}|#{@sloc}|#{@edited_lines}|#{@totaltests}|#{@runtests}|#{@runtestfails}|#{@ccnum}|#{@branchcov}|#{@statementcov}|#{@cycles}|#{@ends_green}|#{@transitions}|#{@json_cycles}")
+		f.puts("#{@id}|#{@language}|#{@name}|#{@participants}|#{@animal}|#{@path}|#{@start_date}|#{@total_time}|#{@totallights}|#{@redlights}|#{@greenlights}|#{@amberlights}|#{@consecutive_reds}|#{@sloc}|#{@test_loc}|#{@production_loc}|#{@edited_lines}|#{@totaltests}|#{@runtests}|#{@runtestfails}|#{@ccnum}|#{@branchcov}|#{@statementcov}|#{@cycles}|#{@ends_green}|#{@transitions}|#{@json_cycles}")
 	end
 
 	def deleted_file(lines)
