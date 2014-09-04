@@ -4,13 +4,17 @@ require File.dirname(__FILE__) + '/lib_domain'
 require File.dirname(__FILE__) + '/meta_kata'
 require 'thread'
 
+#Constants
 SAVE_FILE = Dir.pwd.to_s + "/corpus.csv"
+THREADS = 4
 
+#Variables
 MetaKata.init_file(SAVE_FILE)
 dojo = create_dojo
 results = Array.new
 work_queue = Queue.new
 
+#Queue
 print "\nPopulating Work Queue"
 dojo.katas.each do |kata|
 	if kata.exercise.name.to_s != "Verbal"
@@ -24,7 +28,7 @@ print "\nDone Populating Work Queue\n"
 
 #Work
 print "\nProcessing Katas"
-workers = (0...8).map do
+workers = (0...THREADS).map do
 	Thread.new do
 		begin
 			while work = work_queue.pop(true)
@@ -45,6 +49,7 @@ workers = (0...8).map do
 				print "."
 			end
 		rescue ThreadError
+			puts "THREAD ERROR"
 		end
 	end
 end
