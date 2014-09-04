@@ -6,7 +6,7 @@ require 'thread/pool'
 
 #Debugging
 DEBUG = false
-KATA_LIMIT = 250
+KATA_LIMIT = 15000
 LANG_LIMIT = ["Java-1.8_JUnit", "Python-unittest"]
 
 #Constants
@@ -27,12 +27,12 @@ beginning_time = Time.now
 print "\nPopulating Work Queue\n"
 count = 0
 dojo.katas.each do |kata|
-	if kata.exercise.name.to_s != "Verbal" #&& lang_limit.include?(kata.language.name.to_s)
+	unless kata.exercise.name.to_s == "Verbal" #&& lang_limit.include?(kata.language.name.to_s)
 		kata.avatars.active.each do |avatar|
 			work_queue.push([kata, avatar])
 			count += 1
 			print "\r " + dots(count)
-			break if count >= KATA_LIMIT		
+			break if count >= KATA_LIMIT
 		end
 		break if count >= KATA_LIMIT
 	end
@@ -46,8 +46,8 @@ workers = Thread.pool(THREADS)
 
 work_queue.each do |kata, avatar|
 	mk = MetaKata.new(kata, avatar)
-	begin
-		workers.process {
+	workers.process {
+		begin
 			#Functions
 			mk.calc_cycles
 			mk.calc_sloc
@@ -65,10 +65,10 @@ work_queue.each do |kata, avatar|
 				count += 1
 				print "\r " + dots(count)
 			}
-		}
-	rescue ThreadError => e
-		puts e
-	end
+		rescue ThreadError => e
+			print "\n\nERROR: #{e} #{e.message}\n\n"
+		end	
+	}
 end
 
 #Wait on Threads to Finish
