@@ -63,7 +63,18 @@ class MetaKata
 		end
 
 		f = File.new(path, "a+")
-		f.puts("KataID|Language|KataName|NumParticipants|Animal|Path|StartDate|secsInKata|TotalLights|RedLights|GreenLights|AmberLights|ConsecutiveReds|SLOC|EditedLines|TotalTests|TotalRunTests|RunTestFails|CCNum|BranchCoverage|StatementCoverage|NumCycles|EndsInGreen|LightData|JsonCycles")
+		f.puts("KataID|Language|KataName|NumParticipants|Animal|Path|StartDate|secsInKata|TotalLights|RedLights|GreenLights|AmberLights|ConsecutiveReds|SLOC|TestLoc|ProductionLoc|EditedLines|TotalTests|TotalRunTests|RunTestFails|CCNum|BranchCoverage|StatementCoverage|NumCycles|EndsInGreen|LightData|JsonCycles")
+	end
+
+	def final_output
+		#Set NA for Metrics not available
+		@totaltests = "NA" unless @supp_test_langs.include?@language
+		@runtestfails = "NA" unless @supp_fail_langs.include?@language		
+		@ccnum = "NA" if @ccnum == ""
+		@branchcov = "NA" if @branchcov == ""
+		@statementcov = "NA" if @statementcov == ""
+
+		return "#{@id}|#{@language}|#{@name}|#{@participants}|#{@animal}|#{@path}|#{@start_date}|#{@total_time}|#{@totallights}|#{@redlights}|#{@greenlights}|#{@amberlights}|#{@consecutive_reds}|#{@sloc}|#{@test_loc}|#{@production_loc}|#{@edited_lines}|#{@totaltests}|#{@runtests}|#{@runtestfails}|#{@ccnum}|#{@branchcov}|#{@statementcov}|#{@cycles}|#{@ends_green}|#{@transitions}|#{@json_cycles}"	
 	end
 
 	def save(path)

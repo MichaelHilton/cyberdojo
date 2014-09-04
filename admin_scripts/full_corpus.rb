@@ -2,42 +2,50 @@
 
 require File.dirname(__FILE__) + '/lib_domain'
 require File.dirname(__FILE__) + '/meta_kata'
+require 'thread'
 
-#Process Limiters
-kata_limit = 25000000
-lang_limit = ["Java-1.8_JUnit", "Python-unittest"]
-save_file = Dir.pwd.to_s + "/corpus.csv"
+SAVE_FILE = Dir.pwd.to_s + "/corpus.csv"
 
 MetaKata.init_file(save_file)
-
 dojo = create_dojo
+results = Array.new
+work_q = Queue.new
 
-count = 0
 dojo.katas.each do |kata|
-	if kata.exercise.name.to_s != "Verbal" #&& lang_limit.include?(kata.language.name.to_s)
-		kata.avatars.active.each do |avatar|
-			count += 1
-			mk = MetaKata.new(kata, avatar)
-
-			#Functions
-			mk.calc_cycles
-			mk.calc_sloc
-			mk.coverage_metrics
-			mk.count_tests
-
-			#Debugging
-			#mk.to_screen
-
-			#File Output
-			mk.save(save_file)
-
-			#Progress Display
-			print "\r " + dots(count)
-
-			break if count >= kata_limit
-		end
-		break if count >= kata_limit
+	if kata.exercise.name.to_s != "Verbal"
+		kata.avatars.active.each { |avatar| work_q.push avatar }
 	end
-	break if count >= kata_limit
 end
-puts
+
+#Work
+workers = (0...8).map do
+	Thread.new do
+		begin
+			while avatar = work_q.pop(true)
+				mk = MetaKata.new(kata, avatar)
+
+				#Functions
+				mk.calc_cycles
+				mk.calc_sloc
+				mk.coverage_metrics
+				mk.count_tests
+
+				#Debugging
+				mk.to_screen
+
+				#File Output
+				results.push(mk.final_output)
+
+				print "."
+			end
+		rescue ThreadError
+		end
+	end
+end
+workers.map(&:join)
+
+#Save
+f = File.new(SAVE_FILE, "a+")
+results.each do |result|
+	f.puts(result)
+end
