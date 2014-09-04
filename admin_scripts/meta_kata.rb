@@ -107,10 +107,14 @@ class MetaKata
 				csv = CSV.parse(command)
 				unless(csv.inspect() == "[]")						
 					if @language.to_s == "Java-1.8_JUnit"
-					if File.open(file).read.scan(/junit/).count > 0
-							@test_loc = @test_loc + csv[2][4].to_i
-						else						
-							@production_loc = @production_loc + csv[2][4].to_i
+						begin
+							if File.open(file).read.scan(/junit/).count > 0
+								@test_loc = @test_loc + csv[2][4].to_i
+							else						
+								@production_loc = @production_loc + csv[2][4].to_i
+							end
+						rescue
+							puts "Error: Reading in calc_sloc"
 						end
 					end
 					@sloc = @sloc + csv[2][4].to_i	
@@ -125,109 +129,113 @@ class MetaKata
 			
 			unless isFile.nil?
 				file = @path.to_s + "sandbox/" + currFile.to_s
-				case @language.to_s
-				when "Java-1.8_JUnit"
-					if File.open(file).read.scan(/junit/).count > 0					
-						@totaltests += File.open(file).read.scan(/@Test/).count
+				begin
+					case @language.to_s
+					when "Java-1.8_JUnit"
+						if File.open(file).read.scan(/junit/).count > 0					
+							@totaltests += File.open(file).read.scan(/@Test/).count
+						end
+					when "Java-1.8_Mockito"
+						if File.open(file).read.scan(/org\.mockito/).count > 0					
+							@totaltests += File.open(file).read.scan(/@Test/).count
+						end
+					when "Java-1.8_Powermockito"
+						if File.open(file).read.scan(/org\.powermock/).count > 0					
+							@totaltests += File.open(file).read.scan(/@Test/).count
+						end
+					when "Java-1.8_Approval"
+						if File.open(file).read.scan(/org\.approvaltests/).count > 0					
+							@totaltests += File.open(file).read.scan(/@Test/).count
+						end					
+					when "Python-unittest"
+						if File.open(file).read.scan(/unittest/).count > 0
+							@totaltests += File.open(file).read.scan(/def /).count
+						end
+					when "Python-pytest"
+						if file.include?"test"
+							@totaltests += File.open(file).read.scan(/def /).count
+						end					
+					when "Ruby-TestUnit"
+						if File.open(file).read.scan(/test\/unit/).count > 0
+							@totaltests += File.open(file).read.scan(/def /).count
+						end
+					when "Ruby-Rspec"
+						if File.open(file).read.scan(/describe/).count > 0
+							@totaltests += File.open(file).read.scan(/it /).count
+						end
+					when "C++-assert"
+						if File.open(file).read.scan(/cassert/).count > 0
+							@totaltests += File.open(file).read.scan(/static void /).count
+						end
+					when "C++-GoogleTest"
+						if File.open(file).read.scan(/gtest\.h/).count > 0
+							@totaltests += File.open(file).read.scan(/TEST\(/).count
+						end
+					when "C++-CppUTest"
+						if File.open(file).read.scan(/CppUTest/).count > 0
+							@totaltests += File.open(file).read.scan(/TEST\(/).count
+						end
+					when "C++-Catch"
+						if File.open(file).read.scan(/catch\.hpp/).count > 0
+							@totaltests += File.open(file).read.scan(/TEST_CASE\(/).count
+						end				
+					when "C-assert"
+						if File.open(file).read.scan(/assert\.h/).count > 0
+							@totaltests += File.open(file).read.scan(/static void /).count
+						end								
+					when "Go-testing"
+						if File.open(file).read.scan(/testing/).count > 0
+							@totaltests += File.open(file).read.scan(/func /).count
+						end
+					when "Javascript-assert"
+						if File.open(file).read.scan(/assert/).count > 0
+							@totaltests += File.open(file).read.scan(/assert/).count - 2 #2 extra because of library include line
+						end					
+					when "C#-NUnit"
+						if File.open(file).read.scan(/NUnit\.Framework/).count > 0
+							@totaltests += File.open(file).read.scan(/\[Test\]/).count
+						end
+					when "PHP-PHPUnit"
+						if File.open(file).read.scan(/PHPUnit_Framework_TestCase/).count > 0
+							@totaltests += File.open(file).read.scan(/function /).count
+						end
+					when "Perl-TestSimple"
+						if File.open(file).read.scan(/use Test/).count > 0
+							@totaltests += File.open(file).read.scan(/is/).count
+						end
+					when "CoffeeScript-jasmine"
+						if File.open(file).read.scan(/jasmine-node/).count > 0
+							@totaltests += File.open(file).read.scan(/it/).count
+						end
+					when "Erlang-eunit"
+						if File.open(file).read.scan(/eunit\.hrl/).count > 0
+							@totaltests += File.open(file).read.scan(/test\(\)/).count
+						end
+					when "Haskell-hunit"
+						if File.open(file).read.scan(/Test\.HUnit/).count > 0
+							@totaltests += File.open(file).read.scan(/TestCase/).count
+						end
+					when "Scala-scalatest"
+						if File.open(file).read.scan(/org\.scalatest/).count > 0
+							@totaltests += File.open(file).read.scan(/test\(/).count
+						end
+					when "Clojure-.test"
+						if File.open(file).read.scan(/clojure\.test/).count > 0
+							@totaltests += File.open(file).read.scan(/deftest/).count
+						end
+					when "Groovy-JUnit"
+						if File.open(file).read.scan(/org\.junit/).count > 0
+							@totaltests += File.open(file).read.scan(/@Test/).count
+						end
+					when "Groovy-Spock"
+						if File.open(file).read.scan(/spock\.lang/).count > 0
+							@totaltests += File.open(file).read.scan(/def /).count - 1 #1 extra because of object def
+						end
+					else
+						@totaltests = "NA"
 					end
-				when "Java-1.8_Mockito"
-					if File.open(file).read.scan(/org\.mockito/).count > 0					
-						@totaltests += File.open(file).read.scan(/@Test/).count
-					end
-				when "Java-1.8_Powermockito"
-					if File.open(file).read.scan(/org\.powermock/).count > 0					
-						@totaltests += File.open(file).read.scan(/@Test/).count
-					end
-				when "Java-1.8_Approval"
-					if File.open(file).read.scan(/org\.approvaltests/).count > 0					
-						@totaltests += File.open(file).read.scan(/@Test/).count
-					end					
-				when "Python-unittest"
-					if File.open(file).read.scan(/unittest/).count > 0
-						@totaltests += File.open(file).read.scan(/def /).count
-					end
-				when "Python-pytest"
-					if file.include?"test"
-						@totaltests += File.open(file).read.scan(/def /).count
-					end					
-				when "Ruby-TestUnit"
-					if File.open(file).read.scan(/test\/unit/).count > 0
-						@totaltests += File.open(file).read.scan(/def /).count
-					end
-				when "Ruby-Rspec"
-					if File.open(file).read.scan(/describe/).count > 0
-						@totaltests += File.open(file).read.scan(/it /).count
-					end
-				when "C++-assert"
-					if File.open(file).read.scan(/cassert/).count > 0
-						@totaltests += File.open(file).read.scan(/static void /).count
-					end
-				when "C++-GoogleTest"
-					if File.open(file).read.scan(/gtest\.h/).count > 0
-						@totaltests += File.open(file).read.scan(/TEST\(/).count
-					end
-				when "C++-CppUTest"
-					if File.open(file).read.scan(/CppUTest/).count > 0
-						@totaltests += File.open(file).read.scan(/TEST\(/).count
-					end
-				when "C++-Catch"
-					if File.open(file).read.scan(/catch\.hpp/).count > 0
-						@totaltests += File.open(file).read.scan(/TEST_CASE\(/).count
-					end				
-				when "C-assert"
-					if File.open(file).read.scan(/assert\.h/).count > 0
-						@totaltests += File.open(file).read.scan(/static void /).count
-					end								
-				when "Go-testing"
-					if File.open(file).read.scan(/testing/).count > 0
-						@totaltests += File.open(file).read.scan(/func /).count
-					end
-				when "Javascript-assert"
-					if File.open(file).read.scan(/assert/).count > 0
-						@totaltests += File.open(file).read.scan(/assert/).count - 2 #2 extra because of library include line
-					end					
-				when "C#-NUnit"
-					if File.open(file).read.scan(/NUnit\.Framework/).count > 0
-						@totaltests += File.open(file).read.scan(/\[Test\]/).count
-					end
-				when "PHP-PHPUnit"
-					if File.open(file).read.scan(/PHPUnit_Framework_TestCase/).count > 0
-						@totaltests += File.open(file).read.scan(/function /).count
-					end
-				when "Perl-TestSimple"
-					if File.open(file).read.scan(/use Test/).count > 0
-						@totaltests += File.open(file).read.scan(/is/).count
-					end
-				when "CoffeeScript-jasmine"
-					if File.open(file).read.scan(/jasmine-node/).count > 0
-						@totaltests += File.open(file).read.scan(/it/).count
-					end
-				when "Erlang-eunit"
-					if File.open(file).read.scan(/eunit\.hrl/).count > 0
-						@totaltests += File.open(file).read.scan(/test\(\)/).count
-					end
-				when "Haskell-hunit"
-					if File.open(file).read.scan(/Test\.HUnit/).count > 0
-						@totaltests += File.open(file).read.scan(/TestCase/).count
-					end
-				when "Scala-scalatest"
-					if File.open(file).read.scan(/org\.scalatest/).count > 0
-						@totaltests += File.open(file).read.scan(/test\(/).count
-					end
-				when "Clojure-.test"
-					if File.open(file).read.scan(/clojure\.test/).count > 0
-						@totaltests += File.open(file).read.scan(/deftest/).count
-					end
-				when "Groovy-JUnit"
-					if File.open(file).read.scan(/org\.junit/).count > 0
-						@totaltests += File.open(file).read.scan(/@Test/).count
-					end
-				when "Groovy-Spock"
-					if File.open(file).read.scan(/spock\.lang/).count > 0
-						@totaltests += File.open(file).read.scan(/def /).count - 1 #1 extra because of object def
-					end
-				else
-					@totaltests = "NA"
+				rescue
+					puts "Error: Reading in count_tests"
 				end
 			end
 		end
@@ -280,59 +288,63 @@ class MetaKata
 
 		    unless isFile.nil? || deleted_file(lines) || new_file(lines)
 		    	lines.each do |line|
-					case @language.to_s
-					when "Java-1.8_JUnit"
-						is_test = true if /junit/.match(line.to_s)
-					when "Java-1.8_Mockito"
-						is_test = true if /org\.mockito/.match(line.to_s)
-					when "Java-1.8_Powermockito"
-						is_test = true if /org\.powermock/.match(line.to_s)
-					when "Java-1.8_Approval"
-						is_test = true if /org\.approvaltests/.match(line.to_s)			
-					when "Python-unittest"
-						is_test = true if /unittest/.match(line.to_s)
-					when "Python-pytest"
-						is_test = true if filename.include?"test"			
-					when "Ruby-TestUnit"
-						is_test = true if /test\/unit/.match(line.to_s)
-					when "Ruby-Rspec"
-						is_test = true if /describe/.match(line.to_s)
-					when "C++-assert"
-						is_test = true if /cassert/.match(line.to_s)
-					when "C++-GoogleTest"
-						is_test = true if /gtest\.h/.match(line.to_s)
-					when "C++-CppUTest"
-						is_test = true if /CppUTest/.match(line.to_s)
-					when "C++-Catch"
-						is_test = true if /catch\.hpp/.match(line.to_s)		
-					when "C-assert"
-						is_test = true if /assert\.h/.match(line.to_s)							
-					when "Go-testing"
-						is_test = true if /testing/.match(line.to_s)
-					when "Javascript-assert"
-						is_test = true if /assert/.match(line.to_s)				
-					when "C#-NUnit"
-						is_test = true if /NUnit\.Framework/.match(line.to_s)
-					when "PHP-PHPUnit"
-						is_test = true if /PHPUnit_Framework_TestCase/.match(line.to_s)
-					when "Perl-TestSimple"
-						is_test = true if /use Test/.match(line.to_s)
-					when "CoffeeScript-jasmine"
-						is_test = true if /jasmine-node/.match(line.to_s)
-					when "Erlang-eunit"
-						is_test = true if /eunit\.hrl/.match(line.to_s)
-					when "Haskell-hunit"
-						is_test = true if /Test\.HUnit/.match(line.to_s)
-					when "Scala-scalatest"
-						is_test = true if /org\.scalatest/.match(line.to_s)
-					when "Clojure-.test"
-						is_test = true if /clojure\.test/.match(line.to_s)
-					when "Groovy-JUnit"
-						is_test = true if /org\.junit/.match(line.to_s)
-					when "Groovy-Spock"
-						is_test = true if /spock\.lang/.match(line.to_s)
-					else
-						#Language not supported
+		    		begin
+						case @language.to_s
+						when "Java-1.8_JUnit"
+							is_test = true if /junit/.match(line.to_s)
+						when "Java-1.8_Mockito"
+							is_test = true if /org\.mockito/.match(line.to_s)
+						when "Java-1.8_Powermockito"
+							is_test = true if /org\.powermock/.match(line.to_s)
+						when "Java-1.8_Approval"
+							is_test = true if /org\.approvaltests/.match(line.to_s)			
+						when "Python-unittest"
+							is_test = true if /unittest/.match(line.to_s)
+						when "Python-pytest"
+							is_test = true if filename.include?"test"			
+						when "Ruby-TestUnit"
+							is_test = true if /test\/unit/.match(line.to_s)
+						when "Ruby-Rspec"
+							is_test = true if /describe/.match(line.to_s)
+						when "C++-assert"
+							is_test = true if /cassert/.match(line.to_s)
+						when "C++-GoogleTest"
+							is_test = true if /gtest\.h/.match(line.to_s)
+						when "C++-CppUTest"
+							is_test = true if /CppUTest/.match(line.to_s)
+						when "C++-Catch"
+							is_test = true if /catch\.hpp/.match(line.to_s)		
+						when "C-assert"
+							is_test = true if /assert\.h/.match(line.to_s)							
+						when "Go-testing"
+							is_test = true if /testing/.match(line.to_s)
+						when "Javascript-assert"
+							is_test = true if /assert/.match(line.to_s)				
+						when "C#-NUnit"
+							is_test = true if /NUnit\.Framework/.match(line.to_s)
+						when "PHP-PHPUnit"
+							is_test = true if /PHPUnit_Framework_TestCase/.match(line.to_s)
+						when "Perl-TestSimple"
+							is_test = true if /use Test/.match(line.to_s)
+						when "CoffeeScript-jasmine"
+							is_test = true if /jasmine-node/.match(line.to_s)
+						when "Erlang-eunit"
+							is_test = true if /eunit\.hrl/.match(line.to_s)
+						when "Haskell-hunit"
+							is_test = true if /Test\.HUnit/.match(line.to_s)
+						when "Scala-scalatest"
+							is_test = true if /org\.scalatest/.match(line.to_s)
+						when "Clojure-.test"
+							is_test = true if /clojure\.test/.match(line.to_s)
+						when "Groovy-JUnit"
+							is_test = true if /org\.junit/.match(line.to_s)
+						when "Groovy-Spock"
+							is_test = true if /spock\.lang/.match(line.to_s)
+						else
+							#Language not supported
+						end
+					rescue
+						puts "Error: Reading in calc_lines"
 					end
 
 					break if is_test == true
@@ -569,26 +581,30 @@ class MetaKata
     end
 
 	def coverage_metrics
-		case @language.to_s
-		when "Java-1.8_JUnit"
-			if File.exist?(@path + 'CodeCoverageReport.csv')
-				codeCoverageCSV = CSV.read(@path + 'CodeCoverageReport.csv')
-				unless(codeCoverageCSV.inspect() == "[]")
-					@branchcov = codeCoverageCSV[2][6]
-					@statementcov = codeCoverageCSV[2][16]
+		begin
+			case @language.to_s
+			when "Java-1.8_JUnit"
+				if File.exist?(@path + 'CodeCoverageReport.csv')
+					codeCoverageCSV = CSV.read(@path + 'CodeCoverageReport.csv')
+					unless(codeCoverageCSV.inspect() == "[]")
+						@branchcov = codeCoverageCSV[2][6]
+						@statementcov = codeCoverageCSV[2][16]
+					end
+				end
+				cyclomaticComplexity = `./javancss "#{@path + "sandbox/*.java"}" 2>/dev/null`
+				@ccnum = cyclomaticComplexity.scan(/\d/).join('')
+			when "Python-unittest"
+				if File.exist?(path + 'sandbox/pythonCodeCoverage.csv')
+					codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
+					#NOT SUPPORTED BY PYTHON LIBRARY
+					#branchCoverage = codeCoverageCSV[1][6]
+					@statementcov = (codeCoverageCSV[1][3].to_f)/100
+					codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
+					@ccnum = codeCoverageCSV[1][4]
 				end
 			end
-			cyclomaticComplexity = `./javancss "#{@path + "sandbox/*.java"}" 2>/dev/null`
-			@ccnum = cyclomaticComplexity.scan(/\d/).join('')
-		when "Python-unittest"
-			if File.exist?(path + 'sandbox/pythonCodeCoverage.csv')
-				codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
-				#NOT SUPPORTED BY PYTHON LIBRARY
-				#branchCoverage = codeCoverageCSV[1][6]
-				@statementcov = (codeCoverageCSV[1][3].to_f)/100
-				codeCoverageCSV = CSV.read(@path+ 'sandbox/pythonCodeCoverage.csv')
-				@ccnum = codeCoverageCSV[1][4]
-			end
+		rescue
+			puts "Error: Reading in coverage_metrics"
 		end
 	end
 
