@@ -6,7 +6,7 @@ require 'thread/pool'
 
 #Debugging
 DEBUG = false
-KATA_LIMIT = 100
+KATA_LIMIT = 250
 LANG_LIMIT = ["Java-1.8_JUnit", "Python-unittest"]
 
 #Constants
@@ -31,9 +31,8 @@ dojo.katas.each do |kata|
 		kata.avatars.active.each do |avatar|
 			work_queue.push([kata, avatar])
 			count += 1
+			print "\r " + dots(count)			
 		end
-		print "\r " + dots(count)
-
 		break if count >= KATA_LIMIT
 	end
 	break if count >= KATA_LIMIT
@@ -43,33 +42,33 @@ end
 print "\nProcessing #{count} Katas\n"
 count = 0
 workers = Thread.pool(THREADS)
-	begin
-		workers.process {	
-			while work = work_queue.pop(true) rescue nil
-				mk = MetaKata.new(work[0], work[1])
+begin
+	workers.process {	
+		while work = work_queue.pop(true) rescue nil
+			mk = MetaKata.new(work[0], work[1])
 
-				#Functions
-				mk.calc_cycles
-				mk.calc_sloc
-				mk.coverage_metrics
-				mk.count_tests
+			#Functions
+			mk.calc_cycles
+			mk.calc_sloc
+			mk.coverage_metrics
+			mk.count_tests
 
-				#Debugging
-				mk.to_screen if DEBUG == true
+			#Debugging
+			mk.to_screen if DEBUG == true
 
-				#File Output
-				results.push(mk.final_output)
+			#File Output
+			results.push(mk.final_output)
 
-				#Print Progress Count
-				semaphore.synchronize {
-					count += 1
-					print "\r " + dots(count)
-				}
-			end
-		}
-	rescue ThreadError => e
-		print e
-	end
+			#Print Progress Count
+			semaphore.synchronize {
+				count += 1
+				print "\r " + dots(count)
+			}
+		end
+	}
+rescue ThreadError => e
+	print e
+end
 
 #Finish remaining threads
 workers.shutdown
