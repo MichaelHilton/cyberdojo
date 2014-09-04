@@ -6,7 +6,7 @@ require 'thread/pool'
 
 #Debugging
 DEBUG = false
-KATA_LIMIT = 25000
+KATA_LIMIT = 100
 LANG_LIMIT = ["Java-1.8_JUnit", "Python-unittest"]
 
 #Constants
@@ -43,31 +43,34 @@ end
 print "\nProcessing #{count} Katas\n"
 count = 0
 workers = Thread.pool(THREADS)
-workers.process {
 	begin
-		while work = work_queue.pop(true) rescue nil
-			mk = MetaKata.new(work[0], work[1])
+		workers.process {	
+			while work = work_queue.pop(true) rescue nil
+				work = work_queue.pop(true)
+				mk = MetaKata.new(work[0], work[1])
 
-			#Functions
-			mk.calc_cycles
-			mk.calc_sloc
-			mk.coverage_metrics
-			mk.count_tests
+				#Functions
+				mk.calc_cycles
+				mk.calc_sloc
+				mk.coverage_metrics
+				mk.count_tests
 
-			#Debugging
-			mk.to_screen if DEBUG == true
+				#Debugging
+				mk.to_screen if DEBUG == true
 
-			#File Output
-			results.push(mk.final_output)
+				#File Output
+				results.push(mk.final_output)
 
-			#Print Progress Count
-			semaphore.synchronize { count += 1 }
-			print "\r " + dots(count)
-		end
+				#Print Progress Count
+				semaphore.synchronize {
+					count += 1
+					print "\r " + dots(count)
+				}
+			end
+		}
 	rescue ThreadError => e
 		print e
 	end
-}
 
 #Finish remaining threads
 workers.shutdown
