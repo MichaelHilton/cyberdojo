@@ -23,6 +23,7 @@ end
 print "\nDone Populating Work Queue\n"
 
 #Work
+print "\nProcessing Katas"
 workers = (0...8).map do
 	Thread.new do
 		begin
