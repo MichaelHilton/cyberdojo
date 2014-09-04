@@ -9,23 +9,25 @@ SAVE_FILE = Dir.pwd.to_s + "/corpus.csv"
 MetaKata.init_file(SAVE_FILE)
 dojo = create_dojo
 results = Array.new
-work_q = Queue.new
+work_queue = Queue.new
 
 print "\nPopulating Work Queue"
 dojo.katas.each do |kata|
 	if kata.exercise.name.to_s != "Verbal"
-		kata.avatars.active.each { |avatar| work_q.push avatar }
+		kata.avatars.active.each do |avatar|
+			work_queue.push([kata, avatar])
+		end
 		print "."
 	end
 end
-puts "Done Populating Work Queue"
+print "\nDone Populating Work Queue\n"
 
 #Work
 workers = (0...8).map do
 	Thread.new do
 		begin
-			while avatar = work_q.pop(true)
-				mk = MetaKata.new(kata, avatar)
+			while work = work_queue.pop(true)
+				mk = MetaKata.new(work[0], work[1])
 
 				#Functions
 				mk.calc_cycles
