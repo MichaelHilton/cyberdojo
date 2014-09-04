@@ -3,6 +3,8 @@
 require File.dirname(__FILE__) + '/lib_domain'
 require 'csv'
 
+NEW_EDIT_COUNT = true
+
 class MetaKata
 	attr_reader :sloc, :ccnum, :branchcov, :statementcov, :redlights, :greenlights, :amberlights, :cycles, :ends_green, :transitions, :id, :language, :participants, :animal, :start_date, :name, :path, :totallights, :total_time, :total_lines, :totaltests, :runtests, :runtestfails, :test_loc, :production_loc
 
@@ -274,7 +276,8 @@ class MetaKata
 	    # determine number of lines changed between lights
 	    test_count = 0
 	    code_count = 0
-	    is_test = false
+	    # regex for identifying edits and recording line_number
+		re = /\{:type=>:(added|deleted), .* :number=>(?<line_number>\d+)\}/
 
 	    if prev.nil? #If no previous light use the beginning
 		    diff = @avatar.tags[0].diff(curr.number)
@@ -284,6 +287,8 @@ class MetaKata
 
 		diff.each do |filename,lines|
 
+		    is_test = false
+			line_counted = Array.new
 			isFile = filename.match(/\.java$|\.py$|\.c$|\.cpp$|\.js$|\.php$|\.rb$|\.hs$|\.clj$|\.go$|\.scala$|\.coffee$|\.cs$|\.groovy$\.erl$/i)
 
 		    unless isFile.nil? || deleted_file(lines) || new_file(lines)
@@ -350,16 +355,30 @@ class MetaKata
 					break if is_test == true
 		    	end #End of Lines For Each
 
-		    	#POSSIBLE TODO: Add bag to check for double counting of edited lines
-				if is_test
-		        	test_count += lines.count { |line| line[:type] === :added }
-		        	test_count += lines.count { |line| line[:type] === :deleted }
-		        else
-		    		code_count += lines.count { |line| line[:type] === :added }
-		        	code_count += lines.count { |line| line[:type] === :deleted }
-		        end
+		    	if NEW_EDIT_COUNT #New way of counting
+			    	lines.each do |line|
+			    		output = re.match(line.to_s)
+			    		unless output.nil?
+			    			unless line_counted.include?output['line_number'].to_i
+			    				line_counted.push(output['line_number'].to_i)
+			    				if is_test
+			    					test_count += 1
+			    				else
+			    					code_count += 1
+			    				end
+			    			end
+			    		end
+			    	end
+			    else #Old way of counting
+					if is_test
+			        	test_count += lines.count { |line| line[:type] === :added }
+			        	test_count += lines.count { |line| line[:type] === :deleted }
+			        else
+			    		code_count += lines.count { |line| line[:type] === :added }
+			        	code_count += lines.count { |line| line[:type] === :deleted }
+			        end
+		    	end
 		        
-		        is_test = false		    	
 		    end #End of Unless statment
 		end #End of Diff For Each
 

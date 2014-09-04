@@ -11,7 +11,7 @@ require 'thread/pool'
 #Debugging
 DEBUG = false
 KATA_LIMIT = 15000
-LANG_LIMIT = ["Java-1.8_JUnit", "Python-unittest"]
+#LANG_LIMIT = ["Java-1.8_JUnit", "Python-unittest"]
 
 #Constants
 SAVE_FILE = Dir.pwd.to_s + "/corpus.csv"
