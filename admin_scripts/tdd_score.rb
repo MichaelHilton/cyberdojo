@@ -59,10 +59,10 @@ File.readlines(INPUT).each_with_index do |kata, index|
 	next if metric[STATEMENT_COVERAGE].to_s == "NA"
 
 	#Skip if not FizzBuzz
-	next unless metric[KATA].to_s == "Fizz_Buzz"
+	#next unless metric[KATA].to_s == "Fizz_Buzz"
 
 	#Skip if cycles is under a minimum
-	next if metric[CYCLES].to_i < 8
+	#next if metric[CYCLES].to_i < 8
 
 	#Not excluded so increment counter
 	count += 1
