@@ -1,11 +1,11 @@
 *~
-log/*
+log/
 db/*.sqlite3
 tmp
 coverage
 katas_rb
-katas/*
-katas-hdd/*
+katas/
+katas-hdd/
 
 .DS_Store
 .sass-cache/
