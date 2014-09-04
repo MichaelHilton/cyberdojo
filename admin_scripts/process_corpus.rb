@@ -1,5 +1,9 @@
 #!/usr/bin/env ruby
 
+#For optimal processing use JRuby via RVM
+#Requires the Gem: 'thread'
+#Install: 'gem install thread'
+
 require File.dirname(__FILE__) + '/lib_domain'
 require File.dirname(__FILE__) + '/meta_kata'
 require 'thread/pool'
@@ -11,10 +15,13 @@ LANG_LIMIT = ["Java-1.8_JUnit", "Python-unittest"]
 
 #Constants
 SAVE_FILE = Dir.pwd.to_s + "/corpus.csv"
-THREADS = 8
+THREAD_MIN = 4
+THREAD_MAX = 24
 
 #Initialization
 MetaKata.init_file(SAVE_FILE)
+workers = Thread.pool(THREAD_MIN, THREAD_MAX)
+workers.auto_trim!
 dojo = create_dojo
 results = Array.new
 work_queue = Array.new
@@ -42,8 +49,6 @@ end
 #Worker Threads
 print "\nProcessing #{work_queue.size} Katas\n"
 count = 0
-workers = Thread.pool(THREADS)
-
 work_queue.each do |kata, avatar|
 	mk = MetaKata.new(kata, avatar)
 	workers.process {
