@@ -31,7 +31,8 @@ dojo.katas.each do |kata|
 		kata.avatars.active.each do |avatar|
 			work_queue.push([kata, avatar])
 			count += 1
-			print "\r " + dots(count)			
+			print "\r " + dots(count)
+			break if count >= KATA_LIMIT		
 		end
 		break if count >= KATA_LIMIT
 	end
@@ -39,7 +40,7 @@ dojo.katas.each do |kata|
 end
 
 #Worker Threads
-print "\nProcessing #{count} Katas\n"
+print "\nProcessing #{work_queue.size} Katas\n"
 count = 0
 workers = Thread.pool(THREADS)
 begin
