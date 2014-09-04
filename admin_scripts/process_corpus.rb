@@ -46,7 +46,6 @@ workers = Thread.pool(THREADS)
 	begin
 		workers.process {	
 			while work = work_queue.pop(true) rescue nil
-				work = work_queue.pop(true)
 				mk = MetaKata.new(work[0], work[1])
 
 				#Functions
