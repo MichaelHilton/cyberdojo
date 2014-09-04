@@ -6,7 +6,6 @@ require 'thread'
 
 #Constants
 SAVE_FILE = Dir.pwd.to_s + "/corpus.csv"
-THREADS = 4
 
 #Variables
 MetaKata.init_file(SAVE_FILE)
@@ -28,7 +27,8 @@ print "\nDone Populating Work Queue\n"
 
 #Work
 print "\nProcessing Katas"
-workers = (0...THREADS).map do
+#Create Threads
+workers = (0...4).map do
 	Thread.new do
 		begin
 			while work = work_queue.pop(true)
