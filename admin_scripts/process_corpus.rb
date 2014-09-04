@@ -17,7 +17,7 @@ THREADS = 8
 MetaKata.init_file(SAVE_FILE)
 dojo = create_dojo
 results = Array.new
-work_queue = Queue.new
+work_queue = Array.new
 semaphore = Mutex.new
 
 #Timing
@@ -43,11 +43,11 @@ end
 print "\nProcessing #{work_queue.size} Katas\n"
 count = 0
 workers = Thread.pool(THREADS)
-begin
-	workers.process {	
-		while work = work_queue.pop(true) rescue nil
-			mk = MetaKata.new(work[0], work[1])
 
+work_queue.each do |kata, avatar|
+	mk = MetaKata.new(kata, avatar)
+	begin
+		workers.process {
 			#Functions
 			mk.calc_cycles
 			mk.calc_sloc
@@ -65,16 +65,17 @@ begin
 				count += 1
 				print "\r " + dots(count)
 			}
-		end
-	}
-rescue ThreadError => e
-	print e
+		}
+	rescue ThreadError => e
+		puts e
+	end
 end
 
-#Finish remaining threads
+#Wait on Threads to Finish
 workers.shutdown
 
 #Save
+print "\nSaving Data to File\n"
 f = File.new(SAVE_FILE, "a+")
 results.each do |result|
 	f.puts(result)
@@ -83,4 +84,4 @@ end
 #Done
 end_time = Time.now
 elapsed_time = (end_time - beginning_time).to_i
-print "\nFinished with #{count} katas processed in #{elapsed_time / 60} minutes and #{elapsed_time % 60} seconds\n"
+print "\nFinished with #{count} katas processed in #{elapsed_time / 60} minutes and #{elapsed_time % 60} seconds\n\n"
