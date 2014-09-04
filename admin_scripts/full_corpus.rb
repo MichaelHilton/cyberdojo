@@ -6,7 +6,7 @@ require 'thread'
 
 SAVE_FILE = Dir.pwd.to_s + "/corpus.csv"
 
-MetaKata.init_file(save_file)
+MetaKata.init_file(SAVE_FILE)
 dojo = create_dojo
 results = Array.new
 work_q = Queue.new
