@@ -11,11 +11,14 @@ dojo = create_dojo
 results = Array.new
 work_q = Queue.new
 
+print "\nPopulating Work Queue"
 dojo.katas.each do |kata|
 	if kata.exercise.name.to_s != "Verbal"
 		kata.avatars.active.each { |avatar| work_q.push avatar }
+		print "."
 	end
 end
+puts "Done Populating Work Queue"
 
 #Work
 workers = (0...8).map do
