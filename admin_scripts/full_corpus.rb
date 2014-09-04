@@ -37,7 +37,7 @@ workers = (0...8).map do
 				mk.count_tests
 
 				#Debugging
-				mk.to_screen
+				#mk.to_screen
 
 				#File Output
 				results.push(mk.final_output)
