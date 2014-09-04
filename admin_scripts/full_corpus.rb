@@ -6,7 +6,7 @@ require 'thread'
 
 #Debugging
 DEBUG = false
-KATA_LIMIT = 25
+KATA_LIMIT = 250000000
 LANG_LIMIT = ["Java-1.8_JUnit", "Python-unittest"]
 
 #Constants
