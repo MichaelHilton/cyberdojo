@@ -5,8 +5,7 @@ tmp
 coverage
 katas_rb
 katas/*
-
-
+katas-hdd/*
 
 .DS_Store
 .sass-cache/
