@@ -2,9 +2,9 @@
 
 INPUT = './corpus.csv'
 OUTPUT = './corpus_scored.csv'
-KATA_LIMIT = 150
+KATA_LIMIT = 15000
 SUPP_LANGS = ["Java-1.8_JUnit", "Python-unittest"]
-DEBUG = true
+DEBUG = false
 
 #Data Ordering Constants
 ID = 0
@@ -118,7 +118,7 @@ unless metric[CYCLES].to_i == 0
 	if metric[TOTAL_TESTS].to_i == metric[CYCLES].to_i
 		test_score = 1
 	elsif metric[TOTAL_TESTS].to_i > metric[CYCLES].to_i
-		test_score = (1 - ((((metric[TOTAL_TESTS].to_f - metric[CYCLES].to_f) / metric[CYCLES].to_f) * 30) / 100))
+		test_score = (1 - ((((metric[TOTAL_TESTS].to_f - metric[CYCLES].to_f) / metric[CYCLES].to_f) * 50) / 100))
 	else
 		test_score = (1 - ((((metric[CYCLES].to_f - metric[TOTAL_TESTS].to_f) / metric[CYCLES].to_f) * 100) / 100))
 	end
